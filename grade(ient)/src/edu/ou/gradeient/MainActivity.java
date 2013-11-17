@@ -1,4 +1,4 @@
-package edu.ou.grade_ient;
+package edu.ou.gradeient;
 
 import android.os.Bundle;
 import android.app.Activity;
