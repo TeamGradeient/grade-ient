@@ -19,8 +19,6 @@ public class Task
 	/**Comparator to compare two tasks by their due dates*/
 	public final CompareTasksByDate BY_DUE_DATE = new CompareTasksByDate();
 	
-	private DateTime time;
-	
 	/**No-argument constructor. Creates a default task with null values for all fields.*/
 	public Task ()
 	{
