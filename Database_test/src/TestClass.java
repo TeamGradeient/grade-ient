@@ -3,5 +3,5 @@
 //folder to commit. Once there is another class, this one should be deleted. :)
 
 public class TestClass {
-
+	public String test;
 }
