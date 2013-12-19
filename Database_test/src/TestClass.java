@@ -4,5 +4,6 @@
 
 public class TestClass {
 	public String test;
-	public int secondTest;
+	//NO
+	//public int secondTest; 
 }
