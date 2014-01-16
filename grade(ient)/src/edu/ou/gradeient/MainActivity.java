@@ -9,6 +9,7 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		new Database(this).getWritableDatabase();
 		setContentView(R.layout.activity_main);
 		//Hello!
 	}
