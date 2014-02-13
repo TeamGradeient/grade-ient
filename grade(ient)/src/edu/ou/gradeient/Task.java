@@ -1,6 +1,10 @@
 package edu.ou.gradeient;
 
+import java.util.ArrayList;
+
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.MutableInterval;
 
 public class Task 
 {
@@ -15,6 +19,13 @@ public class Task
 	
 	/**True if the task is done, false otherwise.*/
 	private boolean isDone;
+	
+	/**The time zone in which this task was created*/
+	private DateTimeZone originTimeZone;
+	
+	private MutableInterval taskInterval;
+	
+	private ArrayList<MutableInterval> workIntervals;
 	
 	/**Comparator to compare two tasks by their due dates*/
 	public final CompareTasksByDate BY_DUE_DATE = new CompareTasksByDate();
@@ -33,6 +44,7 @@ public class Task
 	{
 		this.name = name;
 		isDone = false;
+		notes = null;
 	}
 	
 	/**
@@ -42,6 +54,20 @@ public class Task
 	public String getName ()
 	{
 		return name;
+	}
+	
+	/**
+	 * Returns the notes for this task
+	 * @return The notes for this task
+	 */
+	public String getNotes ()
+	{
+		return notes;			
+	}
+	
+	public MutableInterval getTaskInterval ()
+	{
+		return taskInterval;
 	}
 	
 	/**
@@ -62,19 +88,79 @@ public class Task
 		return isDone;
 	}
 	
+	public void addWorkInterval (MutableInterval interval)
+	{
+		
+	}
+	
+	/**
+	 * Sets the name of this task.
+	 * @param newName The name to set
+	 * @throws IllegalArgumentException if name is null
+	 */
 	public void setName (String newName)
 	{
+		if (newName == null)
+		{
+			throw new IllegalArgumentException ("Task name cannot be null");
+		}
 		name = newName;
 	}
 	
+	/**
+	 * Sets the subject of this task
+	 * @param newSubject The subject to be set
+	 * @throws IllegalArgumentException if subject is null
+	 */
 	public void setSubject (Subject newSubject)
 	{
+		if (newSubject == null)
+		{
+			throw new IllegalArgumentException("Subject cannot be null");
+		}
 		subject = newSubject;
 	}
 	
 	public void setIsDone (boolean newIsDone)
 	{
 		isDone = newIsDone;
+	}
+	
+	/**
+	 * Replaces an interval with a new one of the same size, shifted the
+	 * amount of time specified. 
+	 * @param shiftBy The amount of time by which to shift, in milliseconds. 
+	 * A positive time shifts the interval to a later time than the original. 
+	 * @param interval The interval to be shifted
+	 * @return The shifted interval
+	 */
+	private MutableInterval shiftTimeOfInterval (long shiftBy, MutableInterval interval)
+	{
+		if (shiftBy == 0)
+		{
+			return interval;
+		}
+		return new MutableInterval(interval.getStartMillis()+shiftBy, interval.getEndMillis()+shiftBy);
+	}
+	
+	/**
+	 * Shifts the times of all the intervals in workIntervals
+	 * @param shiftBy The time by which to shift, in milliseconds.
+	 */
+	public void shiftTimes (long shiftBy)
+	{
+		//If shiftBy is 0, returns without doing anything
+		if (shiftBy == 0)
+		{
+			return;
+		}
+		
+		//Otherwise, steps through the array of workIntervals and
+		//shifts each one. 
+		for (int i = 0; i < workIntervals.size(); ++i)
+		{
+			shiftTimeOfInterval (shiftBy, workIntervals.get(i));
+		}
 	}
 	
 }
