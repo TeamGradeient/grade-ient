@@ -30,10 +30,11 @@ public class Task
 	/**Comparator to compare two tasks by their due dates*/
 	public final CompareTasksByDate BY_DUE_DATE = new CompareTasksByDate();
 	
-	/**No-argument constructor. Creates a default task with null values for all fields.*/
+	/**No-argument constructor. Creates a new task with default values for all fields.*/
 	public Task ()
 	{
 		isDone = false;
+		workIntervals = new ArrayList<MutableInterval>();
 	}
 	
 	/**
@@ -88,9 +89,17 @@ public class Task
 		return isDone;
 	}
 	
+	/**
+	 * Adds an interval to the list of work times.
+	 * @param interval The interval to be added
+	 */
 	public void addWorkInterval (MutableInterval interval)
 	{
-		
+		if (interval == null)
+		{
+			throw new IllegalArgumentException ("Interval cannot be null");
+		}
+		workIntervals.add(interval);
 	}
 	
 	/**

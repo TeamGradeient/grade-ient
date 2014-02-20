@@ -4,5 +4,8 @@
     <string name="app_name">grade(ient)</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
+    <string name="view_task">View Task</string>
+    <string name="title_activity_task_view">TaskView</string>
+    <string name="welcome_message">Welcome to grade-ient! :)</string>
 
 </resources>
