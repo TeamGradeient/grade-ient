@@ -2,8 +2,12 @@ package edu.ou.gradeient;
 
 import java.util.ArrayList;
 
+import android.util.Log;
+
 public class TaskModel 
 {
+	private static final String TAG = "edu.ou.gradeient.TaskModel";
+	
 	/**ArrayList to store Task objects**/
 	ArrayList<Task> taskList = new ArrayList<Task>();
 	
@@ -14,7 +18,7 @@ public class TaskModel
 	public void addTask (Task newTask)
 	{
 		taskList.add(newTask);
-		System.out.println("A new task has been added.");
+		Log.d(TAG, "A new task has been added.");
 	}
 	
 	/**

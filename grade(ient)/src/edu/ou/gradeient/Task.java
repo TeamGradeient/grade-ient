@@ -1,18 +1,16 @@
 package edu.ou.gradeient;
 
-import java.util.ArrayList;
-
-import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.MutableInterval;
+import org.joda.time.ReadableInterval;
 
 public class Task 
 {
 	/**A String containing the name of this task*/
 	private String name;
 	
-	/**A reference to the subject with which this task is associated.*/
-	private Subject subject;
+	/**The name of the subject with which this task is associated.*/
+	private String subject;
 	
 	/**A string containing notes about this task*/
 	private String notes;
@@ -23,29 +21,30 @@ public class Task
 	/**The time zone in which this task was created*/
 	private DateTimeZone originTimeZone;
 	
+	/**The interval for the task*/
 	private MutableInterval taskInterval;
-	
-	private ArrayList<MutableInterval> workIntervals;
 	
 	/**Comparator to compare two tasks by their due dates*/
 	public final CompareTasksByDate BY_DUE_DATE = new CompareTasksByDate();
-	
-	/**No-argument constructor. Creates a new task with default values for all fields.*/
-	public Task ()
-	{
-		isDone = false;
-		workIntervals = new ArrayList<MutableInterval>();
-	}
-	
+
 	/**
 	 * Creates a default task with the name given.
 	 * @param name The name of the task
+	 * @throws IllegalArgumentException if name is null
 	 */
-	public Task (String name)
+	public Task (String name, long start, long end)
 	{
+		if (name == null)
+			throw new IllegalArgumentException("Name cannot be null.");
+		
 		this.name = name;
 		isDone = false;
-		notes = null;
+		// Set the task interval, taking advantage of the error checking in 
+		// the setter methods.
+		taskInterval = new MutableInterval();
+		setEnd(end);
+		setStart(start);
+		originTimeZone = DateTimeZone.getDefault();
 	}
 	
 	/**
@@ -66,16 +65,21 @@ public class Task
 		return notes;			
 	}
 	
-	public MutableInterval getTaskInterval ()
+	/**
+	 * Returns the start and end interval for this task
+	 * @return The start and end interval for this task
+	 */
+	public ReadableInterval getTaskInterval ()
 	{
 		return taskInterval;
 	}
 	
 	/**
-	 * Returns the subject of this task
-	 * @return A reference to the subject of this task, or null if no subject is associated with the task
+	 * Returns the subject name of this task
+	 * @return The subject name of this task, or null if no subject is 
+	 * associated with the task
 	 */
-	public Subject getSubject ()
+	public String getSubject ()
 	{
 		return subject;
 	}
@@ -84,22 +88,9 @@ public class Task
 	 * Returns true if this task is done, and false otherwise
 	 * @return True if this task is done, and false otherwise
 	 */
-	public boolean getIsDone ()
+	public boolean isDone ()
 	{
 		return isDone;
-	}
-	
-	/**
-	 * Adds an interval to the list of work times.
-	 * @param interval The interval to be added
-	 */
-	public void addWorkInterval (MutableInterval interval)
-	{
-		if (interval == null)
-		{
-			throw new IllegalArgumentException ("Interval cannot be null");
-		}
-		workIntervals.add(interval);
 	}
 	
 	/**
@@ -119,14 +110,9 @@ public class Task
 	/**
 	 * Sets the subject of this task
 	 * @param newSubject The subject to be set
-	 * @throws IllegalArgumentException if subject is null
 	 */
-	public void setSubject (Subject newSubject)
+	public void setSubject (String newSubject)
 	{
-		if (newSubject == null)
-		{
-			throw new IllegalArgumentException("Subject cannot be null");
-		}
 		subject = newSubject;
 	}
 	
@@ -136,24 +122,52 @@ public class Task
 	}
 	
 	/**
-	 * Replaces an interval with a new one of the same size, shifted the
-	 * amount of time specified. 
-	 * @param shiftBy The amount of time by which to shift, in milliseconds. 
-	 * A positive time shifts the interval to a later time than the original. 
-	 * @param interval The interval to be shifted
-	 * @return The shifted interval
+	 * Sets the start instant of the task
+	 * @param start The new start instant in milliseconds
+	 * @throws IllegalArgumentException if start is < 0 or >= end
 	 */
-	private MutableInterval shiftTimeOfInterval (long shiftBy, MutableInterval interval)
+	public void setStart (long start) 
 	{
-		if (shiftBy == 0)
-		{
-			return interval;
+		if (start < 0) {
+			throw new IllegalArgumentException("Start must not be negative.");
 		}
-		return new MutableInterval(interval.getStartMillis()+shiftBy, interval.getEndMillis()+shiftBy);
+		if (taskInterval.getEndMillis() <= start) {
+			throw new IllegalArgumentException("Start must be before end.");
+		}
+		taskInterval.setStartMillis(start);
 	}
 	
 	/**
-	 * Shifts the times of all the intervals in workIntervals
+	 * Sets the end instant of the task
+	 * @param end The new end instant in milliseconds
+	 * @throws IllegalArgumentException if end is < 0 or <= start
+	 */
+	public void setEnd (long end)
+	{
+		if (end < 0) {
+			throw new IllegalArgumentException("End must not be negative.");
+		}
+		if (taskInterval.getStartMillis() >= end) {
+			throw new IllegalArgumentException("End must be after start.");
+		}
+		taskInterval.setEndMillis(end);
+	}
+	
+	/**
+	 * Sets the start/end interval for this task.
+	 * @param interval the new interval for this task
+	 * @throws IllegalArgumentException if interval is null
+	 */
+	public void setTaskInterval (MutableInterval interval) {
+		if (interval == null) {
+			throw new IllegalArgumentException("Task interval cannot be null.");
+		}
+		taskInterval = interval;
+	}
+	
+	/**
+	 * Shifts the times of all the task, including the start, end, and all
+	 * the intervals in workIntervals.
 	 * @param shiftBy The time by which to shift, in milliseconds.
 	 */
 	public void shiftTimes (long shiftBy)
@@ -164,16 +178,28 @@ public class Task
 			return;
 		}
 		
-		//Otherwise, steps through the array of workIntervals and
-		//shifts each one. 
-		for (int i = 0; i < workIntervals.size(); ++i)
-		{
-			shiftTimeOfInterval (shiftBy, workIntervals.get(i));
-		}
+		// Shift the start and end
+		shiftTimeOfInterval(shiftBy, taskInterval);
 	}
 	
+	/**
+	 * Returns the name of the task.
+	 */
 	public String toString ()
 	{
 		return name;
+	}
+	
+	/**
+	 * Shifts the interval by the amount of time specified. 
+	 * @param shiftBy The amount of time by which to shift, in milliseconds. 
+	 * A positive time shifts the interval to a later time than the original. 
+	 * @param interval The interval to be shifted
+	 */
+	private static void shiftTimeOfInterval (long shiftBy, 
+			MutableInterval interval)
+	{
+		interval.setStartMillis(interval.getStartMillis() + shiftBy);
+		interval.setEndMillis(interval.getEndMillis() + shiftBy);
 	}
 }
