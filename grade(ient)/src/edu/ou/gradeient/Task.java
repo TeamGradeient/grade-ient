@@ -30,7 +30,8 @@ public class Task
 	/**
 	 * Creates a default task with the name given.
 	 * @param name The name of the task
-	 * @throws IllegalArgumentException if name is null
+	 * @throws IllegalArgumentException if name is null or if start or end
+	 * is invalid
 	 */
 	public Task (String name, long start, long end)
 	{
@@ -91,6 +92,16 @@ public class Task
 	public boolean isDone ()
 	{
 		return isDone;
+	}
+	
+	/**
+	 * Gets the time zone that the user's device was set to when this
+	 * task was created.
+	 * @return The time zone
+	 */
+	public DateTimeZone getOriginTimeZone () 
+	{
+		return originTimeZone;
 	}
 	
 	/**

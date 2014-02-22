@@ -12,8 +12,8 @@
 hs_err_pid*
 
 # build directories
-/grade(ient)/bin
-/grade(ient)/gen
+*/bin
+*/gen
 
 # personal Eclipse metadata
 .metadata
