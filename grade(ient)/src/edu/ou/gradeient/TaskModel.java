@@ -34,8 +34,27 @@ public class TaskModel
 	
 	public Task[] getTaskList ()
 	{
-		Task [] list = new Task [10];
+		Task [] list = new Task [1];
 		return taskList.toArray(list);
+	}
+	
+	/**
+	 * Finds the task at a certain index and marks it as complete
+	 * or incomplete.
+	 * @throws IllegalArgumentException if the index given is outside of the
+	 * range of the list of tasks.
+	 * @param taskIndex The index of the task
+	 * @param isDone
+	 */
+	public void setIsDone (int taskIndex, boolean isDone)
+	{
+		if (taskIndex >= taskList.size())
+		{
+			throw new IllegalArgumentException("The index must be within "
+					+ "the size of the list of tasks.");
+		}
+		taskList.get(taskIndex).setIsDone(isDone);
+		Log.d(TAG, "Task completion set as " + isDone);
 	}
 
 }
