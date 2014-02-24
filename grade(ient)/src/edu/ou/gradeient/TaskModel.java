@@ -36,6 +36,10 @@ public class TaskModel implements Serializable
 	 * if the task did not exist in the model. 
 	 */
 	public boolean removeTask (Task toDelete) {
+		if (taskList.contains(toDelete))
+			Log.d(TAG, "Task deleted.");
+		else
+			Log.d(TAG, "Task does not exist in the list.");
 		return taskList.remove(toDelete);
 	}
 	
@@ -69,6 +73,7 @@ public class TaskModel implements Serializable
 	private void writeObject(java.io.ObjectOutputStream out) 
 			throws IOException {
 		out.writeObject(taskList);
+		Log.d(TAG, "Tasks written to file.");
 	}
 	
 	/**
@@ -80,6 +85,7 @@ public class TaskModel implements Serializable
 	private void readObject(java.io.ObjectInputStream in)
 			throws IOException, ClassNotFoundException {
 		taskList = (ArrayList<Task>) in.readObject();
+		Log.d(TAG, "Tasks read from file.");
 	}
 	
 }
