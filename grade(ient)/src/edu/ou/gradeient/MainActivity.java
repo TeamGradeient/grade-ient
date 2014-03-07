@@ -12,7 +12,7 @@ import java.io.*;
 public class MainActivity extends Activity {
 	
 	private static final String TAG = "edu.ou.gradeient.MainActivity";
-	private TaskModel model;
+	private static TaskModel model;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -25,9 +25,12 @@ public class MainActivity extends Activity {
 		/*----------------testing for model----------------*/
 		
 		//Add some example tasks to the model for testing
-		model.addTask(new Task("Test task 1", 0, 1));
-		model.addTask(new Task("Test task 2", 3, 4));
-		model.addTask(new Task("Test task 3", 3, 4));
+		model.addTask(new Task("Test task 1", System.currentTimeMillis(),
+				System.currentTimeMillis() + 10000000));
+		model.addTask(new Task("Test task 2", System.currentTimeMillis(),
+				System.currentTimeMillis() + 10000));
+		model.addTask(new Task("Test task 3", System.currentTimeMillis(),
+				System.currentTimeMillis() + 100000000));
 		
 		//Serialize the model and write it to a file on the Android file system
 		writeModelToFile("testFile");
@@ -50,6 +53,11 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 	}
 
+	public static TaskModel getModel()
+	{
+		return model;
+	}
+	
 	private void writeModelToFile(String fileName) {
 		try {
 		     FileOutputStream fileOut = openFileOutput(fileName, MODE_PRIVATE);
