@@ -3,17 +3,19 @@ package edu.ou.gradeient;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 
 public class MainActivity extends Activity {
 
+	private static String TAG = "edu.ou.gradeient.MainActivity";
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		new Database(this).getWritableDatabase();
 		setContentView(R.layout.activity_main);
-		//Hello!
 	}
 
 	@Override
@@ -26,9 +28,15 @@ public class MainActivity extends Activity {
 	public void showTaskView (View view)
 	{
 		//Do something in response to button being pressed
-		System.out.println("The button was pressed.");
+		Log.d(TAG, "The task view button was pressed.");
 		
 		Intent intent = new Intent (this, TaskView.class);
+		startActivity(intent);
+	}
+	
+	public void showEditTaskView(View view) {
+		Log.d(TAG, "The add task button was pressed.");
+		Intent intent = new Intent(this, EditTaskActivity.class);
 		startActivity(intent);
 	}
 
