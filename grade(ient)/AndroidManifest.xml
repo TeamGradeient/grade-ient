@@ -6,7 +6,7 @@
 
     <uses-sdk
         android:minSdkVersion="11"
-        android:targetSdkVersion="18" />
+        android:targetSdkVersion="19" />
 
     <application
         android:allowBackup="true"
@@ -31,7 +31,7 @@
                 android:value="edu.ou.gradeient.MainActivity" />
         </activity>
         <activity
-            android:name="edu.ou.gradeient.EditTaskView"
+            android:name="edu.ou.gradeient.EditTaskActivity"
             android:label="@string/title_activity_edit_task"
             android:parentActivityName="edu.ou.gradeient.MainActivity" >
             <meta-data
