@@ -1,5 +1,10 @@
 package edu.ou.gradeient;
 
+/*
+ * Currently this is a horrible horrible mess sort of based off of
+ * com.android.calendar.event.EditEventView. It will get better!!
+ */
+
 import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.DatePickerDialog.OnDateSetListener;
