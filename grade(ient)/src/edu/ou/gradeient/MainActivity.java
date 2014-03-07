@@ -4,6 +4,7 @@ import edu.ou.gradeient.db.Database;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.format.Time;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -13,35 +14,39 @@ import java.io.*;
 public class MainActivity extends Activity {
 	
 	private static final String TAG = "edu.ou.gradeient.MainActivity";
-	private TaskModel model;
+	private static TaskModel model;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
 		new Database(this).getWritableDatabase();
 		
 		//Construct an instance of the model
 		model = new TaskModel();
 		
+		
 		/*----------------testing for model----------------*/
 		
+		Time today = new Time();
+		today.set(System.currentTimeMillis());
+		Time tomorrow = new Time();
+		tomorrow.set(System.currentTimeMillis()+10000000);
 		//Add some example tasks to the model for testing
-		model.addTask(new Task("Test task 1", 0, 1));
-		model.addTask(new Task("Test task 2", 3, 4));
-		model.addTask(new Task("Test task 3", 3, 4));
+		model.addTask(new Task2("Test task 1", today, tomorrow));
+		model.addTask(new Task2("Test task 2", today, tomorrow));
+		model.addTask(new Task2("Test task 3", today, tomorrow));
 		
 		//Serialize the model and write it to a file on the Android file system
-		writeModelToFile("testFile");
+		//writeModelToFile("testFile");
 		
 		//Set model to null
-		model = null;
+		//model = null;
 		
 		//Reads file from Android file system
-		readModelFromFile("testFile");
+		//readModelFromFile("testFile");
 		
 		//Prints names of tasks
-		Task[] myTasks = model.getTaskList();
+		Task2[] myTasks = model.getTaskList();
 		for (int i = 0; i < myTasks.length; ++i)
 		{
 			System.out.println(myTasks[i].getName());
@@ -52,6 +57,11 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 	}
 
+	public static TaskModel getModel()
+	{
+		return model;
+	}
+	
 	private void writeModelToFile(String fileName) {
 		try {
 		     FileOutputStream fileOut = openFileOutput(fileName, MODE_PRIVATE);

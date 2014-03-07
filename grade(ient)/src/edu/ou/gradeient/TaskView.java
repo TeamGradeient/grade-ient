@@ -1,20 +1,46 @@
 package edu.ou.gradeient;
 
-import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
+import android.app.ListActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.TextView;
+import android.view.ViewGroup;
 
-public class TaskView extends Activity {
-
+public class TaskView extends ListActivity {
+	
+	private static final String TAG = "edu.ou.gradeient.TaskView";
+	
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
+	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_task_view);
 		// Show the Up button in the action bar.
 		getActionBar().setDisplayHomeAsUpEnabled(true);
+		
+		//Set up an ArrayAdapter with data from model.
+		//This adapter contains the names of the tasks.
+		ArrayAdapter<Task2> arrayAdapter = new ArrayAdapter<Task2>(this,
+				android.R.layout.simple_list_item_2, android.R.id.text1, 
+				MainActivity.getModel().getTaskList()) {
+					  @Override
+					  public View getView(int position, View convertView, ViewGroup parent) {
+					    View view = super.getView(position, convertView, parent);
+					    TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+					    TextView text2 = (TextView) view.findViewById(android.R.id.text2);
+
+					    text1.setText(MainActivity.getModel().getTaskList()[position].getName());
+					    text2.setText(MainActivity.getModel().getTaskDueDates()[position]);
+					    return view;
+					  }
+					};
+					
+		setListAdapter(arrayAdapter);
+		//setListAdapter(taskDateAdapter);
 	}
 
 	@Override

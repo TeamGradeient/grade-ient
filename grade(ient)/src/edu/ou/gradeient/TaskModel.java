@@ -13,18 +13,18 @@ public class TaskModel implements Serializable
 	private static final String TAG = "edu.ou.gradeient.TaskModel";
 	
 	/**ArrayList to store Task objects**/
-	ArrayList<Task> taskList;
+	ArrayList<Task2> taskList;
 	
 	public TaskModel()
 	{
-		taskList = new ArrayList<Task>();
+		taskList = new ArrayList<Task2>();
 	}
 	
 	/**
 	 * Adds a new task to the model.
 	 * @param newTask The task to be added
 	 */
-	public void addTask (Task newTask) {
+	public void addTask (Task2 newTask) {
 		taskList.add(newTask);
 		Log.d(TAG, "A new task has been added.");
 	}
@@ -35,7 +35,7 @@ public class TaskModel implements Serializable
 	 * @return True if the task was deleted, false 
 	 * if the task did not exist in the model. 
 	 */
-	public boolean removeTask (Task toDelete) {
+	public boolean removeTask (Task2 toDelete) {
 		if (taskList.contains(toDelete))
 			Log.d(TAG, "Task deleted.");
 		else
@@ -43,9 +43,17 @@ public class TaskModel implements Serializable
 		return taskList.remove(toDelete);
 	}
 	
-	public Task[] getTaskList () {
-		Task [] list = new Task [1];
+	public Task2[] getTaskList () {
+		Task2 [] list = new Task2 [1];
 		return taskList.toArray(list);
+	}
+	
+	public String[] getTaskDueDates(){
+		String[] dueDates = new String[taskList.size()];
+		for (int i = 0; i < taskList.size(); ++i){
+			dueDates[i]=taskList.get(i).getEnd().toString();
+		}
+		return dueDates;
 	}
 	
 	/**
@@ -84,7 +92,7 @@ public class TaskModel implements Serializable
 	 */
 	private void readObject(java.io.ObjectInputStream in)
 			throws IOException, ClassNotFoundException {
-		taskList = (ArrayList<Task>) in.readObject();
+		taskList = (ArrayList<Task2>) in.readObject();
 		Log.d(TAG, "Tasks read from file.");
 	}
 	
