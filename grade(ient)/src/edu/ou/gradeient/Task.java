@@ -1,11 +1,22 @@
 package edu.ou.gradeient;
 
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+
 import org.joda.time.DateTimeZone;
 import org.joda.time.MutableInterval;
 import org.joda.time.ReadableInterval;
 
-public class Task 
+import android.util.Log;
+
+public class Task implements Serializable
 {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	/**A String containing the name of this task*/
 	private String name;
 	
@@ -25,7 +36,7 @@ public class Task
 	private MutableInterval taskInterval;
 	
 	/**Comparator to compare two tasks by their due dates*/
-	public final CompareTasksByDate BY_DUE_DATE = new CompareTasksByDate();
+	public final transient CompareTasksByDate BY_DUE_DATE = new CompareTasksByDate();
 
 	/**
 	 * Creates a default task with the name given.
@@ -226,5 +237,17 @@ public class Task
 	{
 		interval.setStartMillis(interval.getStartMillis() + shiftBy);
 		interval.setEndMillis(interval.getEndMillis() + shiftBy);
+	}
+	
+	private void writeObject(java.io.ObjectOutputStream out) 
+			throws IOException {
+		out.defaultWriteObject();
+		//Log.d(TAG, "Tasks written to file.");
+	}
+	
+	private void readObject(java.io.ObjectInputStream in)
+			throws IOException, ClassNotFoundException {
+		in.defaultReadObject();
+		//Log.d(TAG, "Tasks read from file.");
 	}
 }
