@@ -42,8 +42,6 @@ public class EditTaskActivity extends Activity {
 	private TimePickerDialog startTimePickerDialog;
 	private TimePickerDialog dueTimePickerDialog;
 	private DatePickerDialog datePickerDialog;
-	private boolean timeSelectedWasStartTime;
-	private boolean dateSelectedWasStartDate;
 	
 	/* This class is used to update the time buttons. 
 	 * (from Android Calendar's com.android.calendar.event.EditEventView) */
@@ -70,7 +68,6 @@ public class EditTaskActivity extends Activity {
 			Log.i(TAG, "TimeClickListener! " + v);
 			TimePickerDialog dialog;
 			if (v == startTimeButton) {
-				timeSelectedWasStartTime = true;
 				Time start = task.getStart();
 				if (startTimePickerDialog == null) {
 					startTimePickerDialog = new TimePickerDialog(self, 
@@ -81,7 +78,6 @@ public class EditTaskActivity extends Activity {
 				}
 				dialog = startTimePickerDialog;
 			} else {
-				timeSelectedWasStartTime = false;
 				Time due = task.getEnd();
 				if (dueTimePickerDialog == null) {
 					dueTimePickerDialog = new TimePickerDialog(self,
@@ -127,24 +123,16 @@ public class EditTaskActivity extends Activity {
 			if (datePickerDialog != null)
 				datePickerDialog.dismiss();
 			Time time;
-			if (v == startDateButton) {
-				dateSelectedWasStartDate = true;
+			if (v == startDateButton) 
 				time = task.getStart();
-			} else {
-				dateSelectedWasStartDate = false;
+			else
 				time = task.getEnd();
-			}
 			datePickerDialog = new DatePickerDialog(self, new DateListener(v), 
 					time.year, time.month, time.monthDay);
 			//TODO make sure that this works and we don't need to use a 
 			// fragment or any sort of fancy management stuff
 			datePickerDialog.show();
 		}
-	}
-	
-	//TODO move this into proper method
-	private void populateWhen() {
-		// calls setDate, setTime and sets buttons' onClickListeners
 	}
 	
 	/*
