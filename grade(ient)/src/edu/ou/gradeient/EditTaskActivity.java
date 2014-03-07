@@ -43,6 +43,18 @@ public class EditTaskActivity extends Activity {
 	private TimePickerDialog dueTimePickerDialog;
 	private DatePickerDialog datePickerDialog;
 	
+	// Options for task status to be passed in bundle
+	public interface TaskStatus {
+		public static final int NEW_TASK = 0;
+		public static final int EDIT_TASK = 1;
+	}
+	
+	// Options for things to pass in bundle
+	public interface Extras {
+		public static final String TASK_STATUS = "edu.ou.gradeient.TASK_STATUS";
+		public static final String TASK_ID = "edu.ou.gradeient.TASK_ID";
+	}
+	
 	/* This class is used to update the time buttons. 
 	 * (from Android Calendar's com.android.calendar.event.EditEventView) */
 	private class TimeListener implements OnTimeSetListener {
