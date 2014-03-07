@@ -119,17 +119,31 @@ public class Task
 	}
 	
 	/**
-	 * Sets the subject of this task
-	 * @param newSubject The subject to be set
+	 * Sets the subject of this task.
+	 * @param newSubject The subject to be set. If this is null, the empty
+	 * string will be used.
 	 */
 	public void setSubject (String newSubject)
 	{
-		subject = newSubject;
+		subject = newSubject == null ? "" : newSubject;
 	}
 	
+	/**
+	 * Sets whether the task is done
+	 * @param newIsDone
+	 */
 	public void setIsDone (boolean newIsDone)
 	{
 		isDone = newIsDone;
+	}
+	
+	/**
+	 * Sets the notes for this task.
+	 * @param notes The notes to set. If this is null, the empty string
+	 * will be used.
+	 */
+	public void setNotes (String notes) {
+		this.notes = notes == null ? "" : notes;
 	}
 	
 	/**
