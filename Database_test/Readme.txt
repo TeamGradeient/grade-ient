@@ -1,1 +1,0 @@
-This project is for the purpose of coding and testing a database for grade(ient).
