@@ -30,6 +30,14 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="edu.ou.gradeient.MainActivity" />
         </activity>
+        <activity
+            android:name="edu.ou.gradeient.EditTaskView"
+            android:label="@string/title_activity_edit_task"
+            android:parentActivityName="edu.ou.gradeient.MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="edu.ou.gradeient.MainActivity" />
+        </activity>
     </application>
 
 </manifest>
