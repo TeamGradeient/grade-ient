@@ -1,4 +1,4 @@
-package edu.ou.gradeient;
+package edu.ou.gradeient.db;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,7 +15,7 @@ import android.util.Log;
 
 public class Database extends SQLiteOpenHelper {
 	private static final int DB_VERSION = 1;
-	private static final String DB_NAME = "tasks.s3db";
+	private static final String DB_NAME = "grade-ient.db";
 	private static final String TAG = "grade(ient)DB";
 	private Context context;
 	
