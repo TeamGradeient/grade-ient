@@ -48,6 +48,14 @@ public class TaskModel implements Serializable
 		return taskList.toArray(list);
 	}
 	
+	public String[] getTaskDueDates(){
+		String[] dueDates = new String[taskList.size()];
+		for (int i = 0; i < taskList.size(); ++i){
+			dueDates[i]=taskList.get(i).getTaskInterval().getEnd().toString();
+		}
+		return dueDates;
+	}
+	
 	/**
 	 * Finds the task at a certain index and marks it as complete
 	 * or incomplete.
