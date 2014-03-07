@@ -17,9 +17,9 @@
         android:id="@+id/button1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerHorizontal="true"
-        android:layout_centerVertical="true"
-        android:text="@string/view_task"
-        android:onClick="showTaskView" />
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:onClick="showTaskView"
+        android:text="@string/view_task" />
 
 </RelativeLayout>
