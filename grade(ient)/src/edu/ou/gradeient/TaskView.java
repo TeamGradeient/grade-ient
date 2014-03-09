@@ -1,19 +1,23 @@
 package edu.ou.gradeient;
 
+import android.app.ListActivity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
-import android.app.ListActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
-import android.view.ViewGroup;
 
 public class TaskView extends ListActivity {
 	
-	private static final String TAG = "edu.ou.gradeient.TaskView";
+	private static final String TAG = "TaskView";
+	private static final int ADD_REQUEST = 1;
+	
+	private ArrayAdapter<Task2> arrayAdapter;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -24,23 +28,36 @@ public class TaskView extends ListActivity {
 		
 		//Set up an ArrayAdapter with data from model.
 		//This adapter contains the names of the tasks.
-		ArrayAdapter<Task2> arrayAdapter = new ArrayAdapter<Task2>(this,
-				android.R.layout.simple_list_item_2, android.R.id.text1, 
-				MainActivity.getModel().getTaskList()) {
-					  @Override
-					  public View getView(int position, View convertView, ViewGroup parent) {
-					    View view = super.getView(position, convertView, parent);
-					    TextView text1 = (TextView) view.findViewById(android.R.id.text1);
-					    TextView text2 = (TextView) view.findViewById(android.R.id.text2);
+		arrayAdapter = new ArrayAdapter<Task2>(this,
+				android.R.layout.simple_list_item_2, android.R.id.text1,
+				GradeientApp.getModel().getTaskList()) {
+			@Override
+			public View getView(int position, View convertView, ViewGroup parent) {
+				View view = super.getView(position, convertView, parent);
+				TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+				TextView text2 = (TextView) view.findViewById(android.R.id.text2);
 
-					    text1.setText(MainActivity.getModel().getTaskList()[position].getName());
-					    text2.setText(MainActivity.getModel().getTaskDueDates()[position]);
-					    return view;
-					  }
-					};
+				text1.setText(GradeientApp.getModel().getTaskAtIndex(position).toString());
+				text2.setText(GradeientApp.getModel().getTaskDueDateAtIndex(position));
+				return view;
+			}
+		};
+//		ArrayAdapter<Task2> arrayAdapter = new ArrayAdapter<Task2>(this,
+//				android.R.layout.simple_list_item_2, android.R.id.text1, 
+//				GradeientApp.getModel().getTaskList()) {
+//			@Override
+//			public View getView(int position, View convertView, ViewGroup parent) {
+//				View view = super.getView(position, convertView, parent);
+//				TextView text1 = (TextView) view.findViewById(android.R.id.text1);
+//				TextView text2 = (TextView) view.findViewById(android.R.id.text2);
+//
+//				text1.setText(GradeientApp.getModel().getTaskAtIndex(position).toString());
+//				text2.setText(GradeientApp.getModel().getTaskDueDateAtIndex(position));
+//				return view;
+//			}
+//		};
 					
 		setListAdapter(arrayAdapter);
-		//setListAdapter(taskDateAdapter);
 	}
 
 	@Override
@@ -71,6 +88,24 @@ public class TaskView extends ListActivity {
 		}
 		return super.onOptionsItemSelected(item);
 	}
+	
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, 
+			Intent data) {
+		Log.d(TAG, "A result happened!");
+		switch (requestCode) {
+			case ADD_REQUEST:
+				// If the user didn't press cancel, update the view.
+				if (resultCode == RESULT_OK) {
+					Log.d(TAG, "Updating view.");
+					//TODO does this work?
+					arrayAdapter.notifyDataSetChanged();
+				}
+				break;
+			default:
+				Log.wtf(TAG, "Unknown request code: " + requestCode);
+		}
+	}
 
 	/**
 	 * Starts an intent to add a new task
@@ -80,10 +115,6 @@ public class TaskView extends ListActivity {
 		// Indicate that this is a new task
 		intent.putExtra(EditTaskActivity.Extras.TASK_STATUS, 
 				EditTaskActivity.TaskStatus.NEW_TASK);
-		// The ID of the task to add/edit can also be passed in the bundle.
-		// -1 means new task with no ID specified.
-		// TODO remove later if not used
-		intent.putExtra(EditTaskActivity.Extras.TASK_ID, -1);
-		startActivity(intent);
+		startActivityForResult(intent, ADD_REQUEST);
 	}
 }

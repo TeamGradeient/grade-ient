@@ -1,7 +1,7 @@
 package edu.ou.gradeient;
 
 /*
- * Currently this is a horrible horrible mess sort of based off of
+ * Currently this is sort of a horrible mess sort of based off of
  * com.android.calendar.event.EditEventView. It will get better!!
  */
 
@@ -10,6 +10,7 @@ import android.app.DatePickerDialog;
 import android.app.DatePickerDialog.OnDateSetListener;
 import android.app.TimePickerDialog; //TODO later, change to radial version?
 import android.app.TimePickerDialog.OnTimeSetListener;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.text.format.DateFormat;
@@ -21,7 +22,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.DatePicker;
 import android.widget.TextView;
 import android.widget.TimePicker;
@@ -41,20 +41,21 @@ public class EditTaskActivity extends Activity {
 	private Button startTimeButton;
 	private Button dueTimeButton;
 
-	private TaskModel model;
 	private Task2 task;
 	
 	private TimePickerDialog startTimePickerDialog;
 	private TimePickerDialog dueTimePickerDialog;
 	private DatePickerDialog datePickerDialog;
 	
-	// Options for task status to be passed in bundle
+	private int taskStatus;
+	
+	/** Options for task status to be passed in bundle */
 	public interface TaskStatus {
 		public static final int NEW_TASK = 0;
 		public static final int EDIT_TASK = 1;
 	}
 	
-	// Options for things to pass in bundle
+	/** Options for things to pass in bundle */
 	public interface Extras {
 		public static final String TASK_STATUS = "edu.ou.gradeient.TASK_STATUS";
 		public static final String TASK_ID = "edu.ou.gradeient.TASK_ID";
@@ -82,7 +83,7 @@ public class EditTaskActivity extends Activity {
 	private class TimeClickListener implements View.OnClickListener {
 		@Override
 		public void onClick(View v) {
-			Log.i(TAG, "TimeClickListener! " + v);
+			Log.d(TAG, "TimeClickListener! " + v);
 			TimePickerDialog dialog;
 			if (v == startTimeButton) {
 				Time start = task.getStart();
@@ -131,7 +132,7 @@ public class EditTaskActivity extends Activity {
 	private class DateClickListener implements View.OnClickListener {
 		@Override
 		public void onClick(View v) {
-			Log.i(TAG, "DateClickListener! " + v);
+			Log.d(TAG, "DateClickListener! " + v);
 			//TODO Android Cal version had a check for if activity is paused--
 			//necessary?
 			//TODO why does Android Cal implement this differently from
@@ -159,35 +160,11 @@ public class EditTaskActivity extends Activity {
 	 * fillModelFromUI - updates CalendarEventModel from UI elements, 
 	 * including interacting with ContentProvider
 	 * 
-	 * TODO where do we get TaskModel and Task?
-	 * 
 	 * constructor arguments of unknown purpose: view, done,
 	 * timeSelectedWasStartTime, dateSelectedWasStartDate
 	 * (it also sets up time/date picker dialogs, apparently)
 	 */
 
-	//TODO put this in the actual appropriate place
-	public void setTask(Task2 t) {
-		task = t;
-		//TODO put this in the proper place
-		doneCheckBox.setOnCheckedChangeListener(
-				new CompoundButton.OnCheckedChangeListener() {
-			@Override
-			public void onCheckedChanged(CompoundButton buttonView, 
-					boolean isChecked) {
-				task.setIsDone(isChecked);
-			}
-		});
-		updateTimeDateButtons(false);
-		startDateButton.setOnClickListener(new DateClickListener());
-		dueDateButton.setOnClickListener(new DateClickListener());
-		startTimeButton.setOnClickListener(new TimeClickListener());
-		dueTimeButton.setOnClickListener(new TimeClickListener());
-		nameText.setTextKeepState(task.getName());
-		subjectText.setTextKeepState(task.getSubject());
-		notesText.setTextKeepState(task.getNotes());
-	}
-	
 	private void updateTimeDateButtons(boolean ignoreDst) {
 		long startMillis = task.getStartMillis(ignoreDst);
 		long endMillis = task.getEndMillis(ignoreDst);
@@ -246,9 +223,8 @@ public class EditTaskActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_edit_task);
 		// Show the Up button in the action bar.
-		setupActionBar();
+		getActionBar().setDisplayHomeAsUpEnabled(true);
 		
-		//TODO is this the right place for this?
 		nameText = (TextView)findViewById(R.id.task_name);
 		subjectText = (TextView)findViewById(R.id.subject_name);
 		notesText = (TextView)findViewById(R.id.notes);
@@ -257,21 +233,58 @@ public class EditTaskActivity extends Activity {
 		dueDateButton = (Button)findViewById(R.id.due_date);
 		startTimeButton = (Button)findViewById(R.id.start_time);
 		dueTimeButton = (Button)findViewById(R.id.due_time);
-		Time start = new Time();
-		start.setToNow();
-		Time end = new Time(start);
-		end.monthDay += 1;
-		end.normalize(true);
-		setTask(new Task2("", start, end));
+		
+		// Figure out if the user requested to add or edit a task
+		Bundle extras = getIntent().getExtras();
+		if (extras == null) {
+			taskStatus = TaskStatus.NEW_TASK;
+		} else {
+			// Get the new/edit status, if specified
+			Object status = extras.get(Extras.TASK_STATUS);
+			taskStatus = status == null ? TaskStatus.NEW_TASK : (Integer)status;
+			// Get the ID, if specified.
+			Object id = extras.get(Extras.TASK_ID);
+			long taskId = id == null ? Task2.NEW_TASK_ID : (Long)id;
+			
+			// If we're supposed to edit a task, get its Task object by ID.
+			if (taskStatus == TaskStatus.EDIT_TASK) {
+				if (taskId == Task2.NEW_TASK_ID) {
+					Log.e(TAG, "Requested editing a task with ID NEW_TASK_ID.");
+				} else {
+					// Try to get the task with the given ID.
+					task = GradeientApp.getModel().getTask(taskId);
+					// This is bad but not fatal. Create a new task instead.
+					if (task == null) {
+						Log.w(TAG, "Couldn't find requested task ID " + taskId);
+						taskStatus = TaskStatus.NEW_TASK;
+					}
+				}
+			}
+		}
+		// If we're supposed to create a task (or something went wrong with
+		// finding the task to edit), make a new Task object.
+		if (task == null) {
+			Time start = new Time();
+			start.setToNow();
+			Time end = new Time(start);
+			end.monthDay += 1;
+			end.normalize(true);
+			task = new Task2("", start, end);
+		}
+		updateTimeDateButtons(false);
+		startDateButton.setOnClickListener(new DateClickListener());
+		dueDateButton.setOnClickListener(new DateClickListener());
+		startTimeButton.setOnClickListener(new TimeClickListener());
+		dueTimeButton.setOnClickListener(new TimeClickListener());
+		nameText.setTextKeepState(task.getName());
+		subjectText.setTextKeepState(task.getSubject());
+		notesText.setTextKeepState(task.getNotes());
 	}
 
-	/**
-	 * Set up the {@link android.app.ActionBar}, if the API is available.
-	 */
-	private void setupActionBar() {
-		getActionBar().setDisplayHomeAsUpEnabled(true);
-	}
-
+	// We don't need to worry about onPause, onStop, or onDestroy because
+	// edits should only be committed when the user explicitly says to do so
+	// by pushing a button.
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
@@ -279,19 +292,54 @@ public class EditTaskActivity extends Activity {
 		return true;
 	}
 
+	/**
+	 * Fill the fields in the task from the values entered in the UI.
+	 * The date fields should have been getting updated continuously, so
+	 * don't fill them here.
+	 */
+	private void fillTaskNonDateFields() {
+		task.setIsDone(doneCheckBox.isChecked());
+		task.setName(nameText.getText().toString());
+		task.setNotes(notesText.getText().toString());
+		task.setSubject(subjectText.getText().toString());
+	}
+	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
+		Log.d(TAG, "onOptionsItemSelected called");
 		switch (item.getItemId()) {
-		case android.R.id.home:
-			// This ID represents the Home or Up button. In the case of this
-			// activity, the Up button is shown. Use NavUtils to allow users
-			// to navigate up one level in the application structure. For
-			// more details, see the Navigation pattern on Android Design:
-			//
-			// http://developer.android.com/design/patterns/navigation.html#up-vs-back
-			//
-			NavUtils.navigateUpFromSameTask(this);
-			return true;
+			case android.R.id.home:
+				// This ID represents the Home or Up button. In the case of this
+				// activity, the Up button is shown. Use NavUtils to allow users
+				// to navigate up one level in the application structure. For
+				// more details, see the Navigation pattern on Android Design:
+				//
+				// http://developer.android.com/design/patterns/navigation.html#up-vs-back
+				//
+				NavUtils.navigateUpFromSameTask(this);
+				// INTENTIONALLY FALLING THROUGH
+			case R.id.action_cancel:
+				setResult(RESULT_CANCELED, new Intent());     
+				finish();
+				// Don't update anything.
+				return true;
+			case R.id.action_accept:
+				// Update the data stored in the task object, then add/update
+				// the object in the model.
+				fillTaskNonDateFields();
+				switch (taskStatus) {
+					case TaskStatus.NEW_TASK:
+						GradeientApp.getModel().addTask(task);
+						break;
+					case TaskStatus.EDIT_TASK:
+						GradeientApp.getModel().updateTask(task);
+						break;
+					default:
+						Log.wtf(TAG, "Unknown task status: " + taskStatus);
+				}
+				setResult(RESULT_OK, new Intent());
+				finish();
+				return true;
 		}
 		return super.onOptionsItemSelected(item);
 	}

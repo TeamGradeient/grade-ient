@@ -1,9 +1,32 @@
 package edu.ou.gradeient;
 
+import java.io.Serializable;
+import java.util.Random;
+
 import android.text.format.Time;
 
-public class Task2 
+// TODO Known bug: Time2s are not serializing correctly. However, since
+// serialization is only a temporary solution anyway, don't worry about it.
+
+public class Task2 implements Serializable
 {
+	private static final long serialVersionUID = 1150856378851563710L;
+
+	/** Generic new task ID */
+	public static final long NEW_TASK_ID = -1;
+	
+	private static Random random = new Random();
+	
+	/** Unique ID of the task.
+	 * TODO Longs are relatively short enough that it's apparently a bad idea
+	 * to assume that there will not be collisions between randomly generated
+	 * long IDs. Once database support is implemented, the Task implementation
+	 * should set new tasks' ID to -1, and ID should be a primary key 
+	 * autoincrement field, so the database will manage the ID sequence and
+	 * keep it unique.
+	 */
+	private long id;
+	
 	/**A String containing the name of this task*/
 	private String name;
 	
@@ -16,8 +39,8 @@ public class Task2
 	/**True if the task is done, false otherwise.*/
 	private boolean isDone;
 	
-	private Time start;
-	private Time end;
+	private Time2 start;
+	private Time2 end;
 	
 	/**The time zone in which this task was created*/
 	private String originTimeZone;
@@ -56,12 +79,14 @@ public class Task2
 			throw new IllegalArgumentException("End cannot be null.");
 		
 		this.name = name;
-		this.start = new Time(start);
+		this.start = new Time2(start);
 		setEnd(end);
 		this.originTimeZone = Time.getCurrentTimezone();
 		setSubject(subject);
 		setNotes(notes);
 		this.isDone = isDone;
+		id = random.nextLong();
+		if (id < 0) id = -id;
 	}
 	
 	/**
@@ -142,6 +167,14 @@ public class Task2
 	}
 	
 	/**
+	 * Gets the ID of this task.
+	 * @return The ID of this task.
+	 */
+	public long getId() {
+		return id;
+	}
+	
+	/**
 	 * Sets the name of this task.
 	 * @param newName The name to set
 	 * @throws IllegalArgumentException if name is null
@@ -202,10 +235,10 @@ public class Task2
 			long shiftBy = newStart.toMillis(true) - start.toMillis(true);
 			shiftTimes(shiftBy);
 		} else {
-			start = new Time(newStart);
+			start = new Time2(newStart);
 			start.second = 0;
 			if (start.after(end))
-				end = new Time(start);
+				end = new Time2(start);
 			//TODO will need to handle cutting off work times or not
 		}
 	}
@@ -235,7 +268,7 @@ public class Task2
 		} else {
 			updateTime(start, minute, hour);
 			if (start.after(end))
-				end = new Time(start);
+				end = new Time2(start);
 		}
 	}
 	
@@ -286,7 +319,7 @@ public class Task2
 		} else {
 			updateDate(start, monthDay, month, year);
 			if (start.after(end))
-				end = new Time(start);
+				end = new Time2(start);
 		}
 	}
 	
@@ -318,10 +351,10 @@ public class Task2
 			throw new IllegalArgumentException("End must not be null.");
 		
 		//TODO work times
-		this.end = new Time(end);
+		this.end = new Time2(end);
 		this.end.second = 0;
 		if (this.end.before(this.start))
-			this.start = new Time(this.end);
+			this.start = new Time2(this.end);
 	}
 	
 	/**
@@ -348,7 +381,7 @@ public class Task2
 				end.monthDay += 1;
 				end.normalize(true);
 			} else {
-				start = new Time(end);
+				start = new Time2(end);
 			}
 		}
 	}
@@ -388,7 +421,7 @@ public class Task2
 		//TODO work times
 		updateDate(end, monthDay, month, year);
 		if (end.before(start))
-			start = new Time(end);
+			start = new Time2(end);
 	}
 	
 	/**
@@ -437,6 +470,13 @@ public class Task2
 		time.month = month;
 		time.year = year;
 		time.normalize(true); //TODO DST? time zone?
+	}
+	
+	public Task2 deepCopy() {
+		Task2 task = new Task2(name, start, end, subject, notes, isDone);
+		task.originTimeZone = originTimeZone;
+		task.id = id;
+		return task;
 	}
 	
 	/**

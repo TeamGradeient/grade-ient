@@ -1,23 +1,46 @@
 package edu.ou.gradeient;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 
+import android.content.Context;
+import android.text.format.DateFormat;
+import android.text.format.DateUtils;
 import android.util.Log;
 
 public class TaskModel implements Serializable
 {
+	private static final long serialVersionUID = 6994739496300531572L;
 
-	private static final long serialVersionUID = 1L;
-	private static final String TAG = "edu.ou.gradeient.TaskModel";
+	private static final String TAG = "TaskModel";
 	
 	/**ArrayList to store Task objects**/
-	ArrayList<Task2> taskList;
+	private ArrayList<Task2> taskList;
 	
+	private transient boolean writeAfterUpdate;
+	
+	/**
+	 * Make a new TaskModel, setting writeAfterUpdate to false.
+	 */
 	public TaskModel()
 	{
+		this(false);
+	}
+	
+	/**
+	 * Make a new TaskModel.
+	 * @param writeAfterUpdate true if changes should be serialized to the 
+	 * model file after each update
+	 */
+	public TaskModel(boolean writeAfterUpdate) {
 		taskList = new ArrayList<Task2>();
+		this.writeAfterUpdate = writeAfterUpdate;
 	}
 	
 	/**
@@ -27,6 +50,40 @@ public class TaskModel implements Serializable
 	public void addTask (Task2 newTask) {
 		taskList.add(newTask);
 		Log.d(TAG, "A new task has been added.");
+		// For now, write the file on every change. (TODO take out later)
+		if (writeAfterUpdate)
+			writeFile(GradeientApp.getAppContext(), GradeientApp.MODEL_FILE);
+	}
+	
+	public void setWriteAfterUpdate(boolean writeAfterUpdate) {
+		this.writeAfterUpdate = writeAfterUpdate;
+	}
+	
+	/**
+	 * Update the given task's entry in the model. Matching is done by ID.
+	 * If the task is not found, it will be added (but an error message will
+	 * be logged).
+	 * @param task The task to update
+	 */
+	public void updateTask (Task2 task) {
+		long taskId = task.getId();
+		boolean matched = false;
+		// Find the task with the matching ID and replace it.
+		for (int i = 0; i < taskList.size(); ++i) {
+			if (taskList.get(i).getId() == taskId) {
+				taskList.set(i, task);
+				matched = true;
+				break;
+			}
+		}
+		if (!matched) {
+			Log.w(TAG, "Non-existant task updated: name = " + task.getName()
+					+ ", id = " + taskId);
+			taskList.add(task);
+		}
+		// For now, write the file on every change. TODO take out later
+		if (writeAfterUpdate)
+			writeFile(GradeientApp.getAppContext(), GradeientApp.MODEL_FILE);
 	}
 	
 	/**
@@ -40,18 +97,67 @@ public class TaskModel implements Serializable
 			Log.d(TAG, "Task deleted.");
 		else
 			Log.d(TAG, "Task does not exist in the list.");
-		return taskList.remove(toDelete);
+		boolean ret = taskList.remove(toDelete);
+		// For now, write the file on every change. TODO take out later
+		if (writeAfterUpdate)
+			writeFile(GradeientApp.getAppContext(), GradeientApp.MODEL_FILE);
+		return ret;
 	}
 	
-	public Task2[] getTaskList () {
+	/**
+	 * Gets a task by ID. Returns null if the ID isn't found.
+	 * @param id The task ID to look up
+	 * @return The task with the given ID, or null
+	 */
+	public Task2 getTask(long id) {
+		for (Task2 t : taskList) {
+			if (t.getId() == id)
+				return t;
+		}
+		return null;
+	}
+	
+	public Task2 getTaskAtIndex(int i) {
+		return taskList.get(i);
+	}
+	
+	public Task2[] getTaskArray () {
 		Task2 [] list = new Task2 [1];
 		return taskList.toArray(list);
 	}
 	
+	ArrayList<Task2> getTaskList() {
+		return taskList;
+	}
+	
+	public String getTaskDueDateAtIndex(int i) {
+		//TODO This is from EditEventActivity in Android Calendar.
+		// They seemed to think there could be timezone-related display issues.
+		// Figure out if that's true, and if so, handle it.
+		int flags = DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_WEEKDAY
+				| DateUtils.FORMAT_ABBREV_MONTH | DateUtils.FORMAT_ABBREV_WEEKDAY
+				| DateUtils.FORMAT_SHOW_TIME;
+		Context context = GradeientApp.getAppContext();
+		if (context != null && DateFormat.is24HourFormat(context))
+			flags |= DateUtils.FORMAT_24HOUR;
+		return DateUtils.formatDateTime(context,
+				taskList.get(i).getEndMillis(false), flags);
+	}
+	
 	public String[] getTaskDueDates(){
 		String[] dueDates = new String[taskList.size()];
+		//TODO This is from EditEventActivity in Android Calendar.
+		// They seemed to think there could be timezone-related display issues.
+		// Figure out if that's true, and if so, handle it.
+		int flags = DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_WEEKDAY
+				| DateUtils.FORMAT_ABBREV_MONTH | DateUtils.FORMAT_ABBREV_WEEKDAY
+				| DateUtils.FORMAT_SHOW_TIME;
+		Context context = GradeientApp.getAppContext();
+		if (context != null && DateFormat.is24HourFormat(context))
+			flags |= DateUtils.FORMAT_24HOUR;
 		for (int i = 0; i < taskList.size(); ++i){
-			dueDates[i]=taskList.get(i).getEnd().toString();
+			dueDates[i] = DateUtils.formatDateTime(context, 
+					taskList.get(i).getEndMillis(false), flags);
 		}
 		return dueDates;
 	}
@@ -70,7 +176,30 @@ public class TaskModel implements Serializable
 					+ "the size of the list of tasks.");
 		}
 		taskList.get(taskIndex).setIsDone(isDone);
-		Log.d(TAG, "Task completion set as " + isDone);
+		// For now, write the file on every change.
+		// TODO take out later
+		if (writeAfterUpdate)
+			writeFile(GradeientApp.getAppContext(), GradeientApp.MODEL_FILE);
+	}
+	
+	public void writeFile (Context context, String filename) {
+		FileOutputStream fileOut = null;
+		ObjectOutputStream objOut = null;
+		try {
+		     fileOut = context.openFileOutput(filename, Context.MODE_PRIVATE);
+		     objOut = new ObjectOutputStream(fileOut);
+		     objOut.writeObject(this);
+		     Log.d(TAG, "Serialized data is saved in " + filename);
+	    } catch (IOException ex) {
+	    	Log.e(TAG, "Error writing model file.", ex);
+	    } finally {
+	    	try {
+	    		if (objOut != null) objOut.close();
+	    		if (fileOut != null) fileOut.close();
+	    	} catch (IOException ex) {
+	    		Log.e(TAG, "Error closing model file after writing.", ex);
+	    	}
+	    }
 	}
 
 	/**
@@ -78,7 +207,7 @@ public class TaskModel implements Serializable
 	 * @param out The ObjectOutputStream to which the data is to be written
 	 * @throws IOException
 	 */
-	private void writeObject(java.io.ObjectOutputStream out) 
+	private void writeObject(ObjectOutputStream out) 
 			throws IOException {
 		out.writeObject(taskList);
 		Log.d(TAG, "Tasks written to file.");
@@ -90,10 +219,42 @@ public class TaskModel implements Serializable
 	 * @throws IOException
 	 * @throws ClassNotFoundException
 	 */
-	private void readObject(java.io.ObjectInputStream in)
+	@SuppressWarnings("unchecked")
+	private void readObject(ObjectInputStream in)
 			throws IOException, ClassNotFoundException {
 		taskList = (ArrayList<Task2>) in.readObject();
 		Log.d(TAG, "Tasks read from file.");
 	}
 	
+	public static TaskModel readModelFromFile(Context context, String filename) {
+		FileInputStream fileIn = null;
+		ObjectInputStream objIn = null;
+		TaskModel model = null;
+		try {
+			// Try to open the model file. If this is the first run of the
+			// application, this will throw FileNotFoundException.
+			fileIn = context.openFileInput(filename);
+			objIn = new ObjectInputStream(fileIn);
+			model = (TaskModel)objIn.readObject();
+			Log.d(TAG, "Serialized data has been loaded from " + filename);
+		} catch (FileNotFoundException ex) {
+			Log.d(TAG, "Model file didn't exist. Creating new model...");
+		} catch (IOException ex) {
+			Log.e(TAG, "Error reading model file.", ex);
+		} catch (ClassNotFoundException ex) {
+			Log.e(TAG, "Error reading model file.", ex);
+		} finally {
+			// Free resources properly!
+			try {
+				if (objIn != null) objIn.close();
+				if (fileIn != null) fileIn.close();
+			} catch (IOException ex) {
+				Log.e(TAG, "Error closing model file after reading.", ex);
+			}
+		}
+		// If there were any errors (or this is the first run), make a new model
+		if (model == null)
+			model = new TaskModel();
+		return model;
+	}
 }
