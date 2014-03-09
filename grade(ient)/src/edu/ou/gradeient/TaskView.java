@@ -10,12 +10,14 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 
 public class TaskView extends ListActivity {
 	
 	private static final String TAG = "TaskView";
 	private static final int ADD_REQUEST = 1;
+	private static final int EDIT_REQUEST = 2;
 	
 	private ArrayAdapter<Task2> arrayAdapter;
 	
@@ -90,6 +92,19 @@ public class TaskView extends ListActivity {
 	}
 	
 	@Override
+	protected void onListItemClick (ListView l, View v, int position, long id)
+	{
+		Intent intent = new Intent (this, EditTaskActivity.class);
+		//Indicate that this is an existing task to edit
+		intent.putExtra(EditTaskActivity.Extras.TASK_STATUS,
+				EditTaskActivity.TaskStatus.EDIT_TASK);
+		//gets the task that was clicked.
+		Task2 task = (Task2) getListView().getItemAtPosition(position);
+		intent.putExtra(EditTaskActivity.Extras.TASK_ID, task.getId() );
+		startActivityForResult(intent, EDIT_REQUEST);
+	}
+	
+	@Override
 	protected void onActivityResult(int requestCode, int resultCode, 
 			Intent data) {
 		Log.d(TAG, "A result happened!");
@@ -102,6 +117,12 @@ public class TaskView extends ListActivity {
 					arrayAdapter.notifyDataSetChanged();
 				}
 				break;
+			case EDIT_REQUEST:
+				if (resultCode == RESULT_OK) {
+					Log.d(TAG, "Updating view.");
+					//TODO does this work?
+					arrayAdapter.notifyDataSetChanged();
+				}
 			default:
 				Log.wtf(TAG, "Unknown request code: " + requestCode);
 		}
