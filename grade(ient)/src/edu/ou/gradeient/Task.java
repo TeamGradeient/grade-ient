@@ -1,10 +1,10 @@
 package edu.ou.gradeient;
 
 import java.io.Serializable;
+import java.util.Comparator;
 import java.util.Random;
 
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.joda.time.MutableInterval;
 import org.joda.time.ReadableInterval;
 
@@ -50,7 +50,14 @@ public class Task implements Serializable
 	private final MutableInterval taskInterval;
 	
 	/**Comparator to compare two tasks by their due dates*/
-	public static final CompareTasksByDate BY_DUE_DATE = new CompareTasksByDate();
+	public static final Comparator<Task> BY_DUE_DATE = new Comparator<Task>() {
+		@Override
+		public int compare(Task lhs, Task rhs) {
+			long ldue = lhs.getEndMillis();
+			long rdue = rhs.getEndMillis();
+			return ldue < rdue ? -1 : (ldue == rdue ? 0 : 1);
+		}
+	};
 
 	/**
 	 * Creates a default task with the name given.
@@ -64,10 +71,9 @@ public class Task implements Serializable
 			throw new IllegalArgumentException("Name cannot be null.");
 		
 		this.name = name;
+		subject = "";
+		notes = "";
 		isDone = false;
-		// Get rid of seconds and milliseconds
-		start -= start % 60000;
-		end -= end % 60000;
 		taskInterval = new MutableInterval(start, end);
 		id = random.nextLong();
 		if (id < 0) id = -id;
@@ -113,12 +119,34 @@ public class Task implements Serializable
 		return taskInterval;
 	}
 	
+	/**
+	 * Gets the start time/date of this task.
+	 */
 	public DateTime getStart() {
 		return taskInterval.getStart();
 	}
+	
+	/**
+	 * Gets the start time/date of this task in milliseconds since the 
+	 * Unix epoch.
+	 */
+	public long getStartMillis() {
+		return taskInterval.getStartMillis();
+	}
 
+	/**
+	 * Gets the end time/date of this task.
+	 */
 	public DateTime getEnd() {
 		return taskInterval.getEnd();
+	}
+	
+	/**
+	 * Gets the start time/date of this task in milliseconds since the 
+	 * Unix epoch.
+	 */
+	public long getEndMillis() {
+		return taskInterval.getEndMillis();
 	}
 	
 	/**
@@ -132,12 +160,19 @@ public class Task implements Serializable
 	}
 	
 	/**
-	 * Returns true if this task is done, and false otherwise
+	 * Returns whether this task is done.
 	 * @return True if this task is done, and false otherwise
 	 */
 	public boolean isDone ()
 	{
 		return isDone;
+	}
+	
+	/**
+	 * Gets the ID of this task.
+	 */
+	public long getId() {
+		return id;
 	}
 	
 	/**

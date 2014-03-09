@@ -5,6 +5,8 @@ package edu.ou.gradeient;
  * com.android.calendar.event.EditEventView. It will get better!!
  */
 
+import org.joda.time.DateTime;
+
 import android.app.Activity;
 import android.app.DatePickerDialog;
 import android.app.DatePickerDialog.OnDateSetListener;
@@ -15,7 +17,6 @@ import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.text.format.DateFormat;
 import android.text.format.DateUtils;
-import android.text.format.Time;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -41,12 +42,11 @@ public class EditTaskActivity extends Activity {
 	private Button startTimeButton;
 	private Button dueTimeButton;
 
-	private Task2 task;
-	
 	private TimePickerDialog startTimePickerDialog;
 	private TimePickerDialog dueTimePickerDialog;
 	private DatePickerDialog datePickerDialog;
 	
+	private Task task;
 	private int taskStatus;
 	
 	/** Options for task status to be passed in bundle */
@@ -73,36 +73,39 @@ public class EditTaskActivity extends Activity {
 		@Override
 		public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
 			if (this.view == startTimeButton)
-				task.setStartTime(minute, hourOfDay, true);
+				task.setStartTime(hourOfDay, minute, true);
 			else
-				task.setEndTime(minute, hourOfDay, true);
-			updateTimeDateButtons(true);
+				task.setEndTime(hourOfDay, minute, true);
+			updateTimeDateButtons();
 		}
 	}
 	
 	private class TimeClickListener implements View.OnClickListener {
 		@Override
 		public void onClick(View v) {
-			Log.d(TAG, "TimeClickListener! " + v);
 			TimePickerDialog dialog;
 			if (v == startTimeButton) {
-				Time start = task.getStart();
+				DateTime start = task.getStart();
 				if (startTimePickerDialog == null) {
 					startTimePickerDialog = new TimePickerDialog(self, 
-							new TimeListener(v), start.hour, start.minute, 
+							new TimeListener(v), start.getHourOfDay(), 
+							start.getMinuteOfHour(), 
 							DateFormat.is24HourFormat(self));
 				} else {
-					startTimePickerDialog.updateTime(start.hour, start.minute);
+					startTimePickerDialog.updateTime(start.getHourOfDay(),
+							start.getMinuteOfHour());
 				}
 				dialog = startTimePickerDialog;
 			} else {
-				Time due = task.getEnd();
+				DateTime due = task.getEnd();
 				if (dueTimePickerDialog == null) {
 					dueTimePickerDialog = new TimePickerDialog(self,
-							new TimeListener(v), due.hour, due.minute,
+							new TimeListener(v), due.getHourOfDay(), 
+							due.getMinuteOfHour(),
 							DateFormat.is24HourFormat(self));
 				} else {
-					dueTimePickerDialog.updateTime(due.hour, due.minute);
+					dueTimePickerDialog.updateTime(due.getHourOfDay(), 
+							due.getMinuteOfHour());
 				}
 				dialog = dueTimePickerDialog;
 			}
@@ -122,10 +125,10 @@ public class EditTaskActivity extends Activity {
 		@Override
 		public void onDateSet(DatePicker view, int year, int month, int day) {
 			if (this.view == startDateButton)
-				task.setStartDate(day, month, year, true);
+				task.setStartDate(year, month, day, true);
 			else
-				task.setEndDate(day, month, year);
-			updateTimeDateButtons(true);
+				task.setEndDate(year, month, day);
+			updateTimeDateButtons();
 		}
 	}
 	
@@ -140,13 +143,13 @@ public class EditTaskActivity extends Activity {
 			
 			if (datePickerDialog != null)
 				datePickerDialog.dismiss();
-			Time time;
+			DateTime time;
 			if (v == startDateButton) 
 				time = task.getStart();
 			else
 				time = task.getEnd();
 			datePickerDialog = new DatePickerDialog(self, new DateListener(v), 
-					time.year, time.month, time.monthDay);
+					time.getYear(), time.getMonthOfYear(), time.getDayOfMonth());
 			//TODO make sure that this works and we don't need to use a 
 			// fragment or any sort of fancy management stuff
 			datePickerDialog.show();
@@ -165,9 +168,9 @@ public class EditTaskActivity extends Activity {
 	 * (it also sets up time/date picker dialogs, apparently)
 	 */
 
-	private void updateTimeDateButtons(boolean ignoreDst) {
-		long startMillis = task.getStartMillis(ignoreDst);
-		long endMillis = task.getEndMillis(ignoreDst);
+	private void updateTimeDateButtons() {
+		long startMillis = task.getStartMillis();
+		long endMillis = task.getEndMillis();
 		setDate(startDateButton, startMillis);
 		setTime(startTimeButton, startMillis);
 		setDate(dueDateButton, endMillis);
@@ -244,11 +247,11 @@ public class EditTaskActivity extends Activity {
 			taskStatus = status == null ? TaskStatus.NEW_TASK : (Integer)status;
 			// Get the ID, if specified.
 			Object id = extras.get(Extras.TASK_ID);
-			long taskId = id == null ? Task2.NEW_TASK_ID : (Long)id;
+			long taskId = id == null ? Task.NEW_TASK_ID : (Long)id;
 			
 			// If we're supposed to edit a task, get its Task object by ID.
 			if (taskStatus == TaskStatus.EDIT_TASK) {
-				if (taskId == Task2.NEW_TASK_ID) {
+				if (taskId == Task.NEW_TASK_ID) {
 					Log.e(TAG, "Requested editing a task with ID NEW_TASK_ID.");
 				} else {
 					// Try to get the task with the given ID.
@@ -264,14 +267,11 @@ public class EditTaskActivity extends Activity {
 		// If we're supposed to create a task (or something went wrong with
 		// finding the task to edit), make a new Task object.
 		if (task == null) {
-			Time start = new Time();
-			start.setToNow();
-			Time end = new Time(start);
-			end.monthDay += 1;
-			end.normalize(true);
-			task = new Task2("", start, end);
+			DateTime start = new DateTime();
+			DateTime end = new DateTime(start).plusDays(1);
+			task = new Task("", start.getMillis(), end.getMillis());
 		}
-		updateTimeDateButtons(false);
+		updateTimeDateButtons();
 		startDateButton.setOnClickListener(new DateClickListener());
 		dueDateButton.setOnClickListener(new DateClickListener());
 		startTimeButton.setOnClickListener(new TimeClickListener());
@@ -279,6 +279,7 @@ public class EditTaskActivity extends Activity {
 		nameText.setTextKeepState(task.getName());
 		subjectText.setTextKeepState(task.getSubject());
 		notesText.setTextKeepState(task.getNotes());
+		doneCheckBox.setChecked(task.isDone());
 	}
 
 	// We don't need to worry about onPause, onStop, or onDestroy because
@@ -309,14 +310,7 @@ public class EditTaskActivity extends Activity {
 		Log.d(TAG, "onOptionsItemSelected called");
 		switch (item.getItemId()) {
 			case android.R.id.home:
-				// This ID represents the Home or Up button. In the case of this
-				// activity, the Up button is shown. Use NavUtils to allow users
-				// to navigate up one level in the application structure. For
-				// more details, see the Navigation pattern on Android Design:
-				//
-				// http://developer.android.com/design/patterns/navigation.html#up-vs-back
-				//
-				NavUtils.navigateUpFromSameTask(this);
+				// Don't use navigateUpFromSameTask here--it will go up too far.
 				// INTENTIONALLY FALLING THROUGH
 			case R.id.action_cancel:
 				setResult(RESULT_CANCELED, new Intent());     

@@ -21,7 +21,7 @@ public class TaskModel implements Serializable
 	private static final String TAG = "TaskModel";
 	
 	/**ArrayList to store Task objects**/
-	private ArrayList<Task2> taskList;
+	private ArrayList<Task> taskList;
 	
 	private transient boolean writeAfterUpdate;
 	
@@ -39,7 +39,7 @@ public class TaskModel implements Serializable
 	 * model file after each update
 	 */
 	public TaskModel(boolean writeAfterUpdate) {
-		taskList = new ArrayList<Task2>();
+		taskList = new ArrayList<Task>();
 		this.writeAfterUpdate = writeAfterUpdate;
 	}
 	
@@ -47,7 +47,7 @@ public class TaskModel implements Serializable
 	 * Adds a new task to the model.
 	 * @param newTask The task to be added
 	 */
-	public void addTask (Task2 newTask) {
+	public void addTask (Task newTask) {
 		taskList.add(newTask);
 		Log.d(TAG, "A new task has been added.");
 		// For now, write the file on every change. (TODO take out later)
@@ -65,7 +65,7 @@ public class TaskModel implements Serializable
 	 * be logged).
 	 * @param task The task to update
 	 */
-	public void updateTask (Task2 task) {
+	public void updateTask (Task task) {
 		long taskId = task.getId();
 		boolean matched = false;
 		// Find the task with the matching ID and replace it.
@@ -92,7 +92,7 @@ public class TaskModel implements Serializable
 	 * @return True if the task was deleted, false 
 	 * if the task did not exist in the model. 
 	 */
-	public boolean removeTask (Task2 toDelete) {
+	public boolean removeTask (Task toDelete) {
 		if (taskList.contains(toDelete))
 			Log.d(TAG, "Task deleted.");
 		else
@@ -109,24 +109,24 @@ public class TaskModel implements Serializable
 	 * @param id The task ID to look up
 	 * @return The task with the given ID, or null
 	 */
-	public Task2 getTask(long id) {
-		for (Task2 t : taskList) {
+	public Task getTask(long id) {
+		for (Task t : taskList) {
 			if (t.getId() == id)
 				return t;
 		}
 		return null;
 	}
 	
-	public Task2 getTaskAtIndex(int i) {
+	public Task getTaskAtIndex(int i) {
 		return taskList.get(i);
 	}
 	
-	public Task2[] getTaskArray () {
-		Task2 [] list = new Task2 [1];
+	public Task[] getTaskArray () {
+		Task [] list = new Task [1];
 		return taskList.toArray(list);
 	}
 	
-	ArrayList<Task2> getTaskList() {
+	ArrayList<Task> getTaskList() {
 		return taskList;
 	}
 	
@@ -138,10 +138,10 @@ public class TaskModel implements Serializable
 				| DateUtils.FORMAT_ABBREV_MONTH | DateUtils.FORMAT_ABBREV_WEEKDAY
 				| DateUtils.FORMAT_SHOW_TIME;
 		Context context = GradeientApp.getAppContext();
-		if (context != null && DateFormat.is24HourFormat(context))
+		if (DateFormat.is24HourFormat(context))
 			flags |= DateUtils.FORMAT_24HOUR;
 		return DateUtils.formatDateTime(context,
-				taskList.get(i).getEndMillis(false), flags);
+				taskList.get(i).getEndMillis(), flags);
 	}
 	
 	public String[] getTaskDueDates(){
@@ -153,11 +153,11 @@ public class TaskModel implements Serializable
 				| DateUtils.FORMAT_ABBREV_MONTH | DateUtils.FORMAT_ABBREV_WEEKDAY
 				| DateUtils.FORMAT_SHOW_TIME;
 		Context context = GradeientApp.getAppContext();
-		if (context != null && DateFormat.is24HourFormat(context))
+		if (DateFormat.is24HourFormat(context))
 			flags |= DateUtils.FORMAT_24HOUR;
 		for (int i = 0; i < taskList.size(); ++i){
 			dueDates[i] = DateUtils.formatDateTime(context, 
-					taskList.get(i).getEndMillis(false), flags);
+					taskList.get(i).getEndMillis(), flags);
 		}
 		return dueDates;
 	}
@@ -222,7 +222,7 @@ public class TaskModel implements Serializable
 	@SuppressWarnings("unchecked")
 	private void readObject(ObjectInputStream in)
 			throws IOException, ClassNotFoundException {
-		taskList = (ArrayList<Task2>) in.readObject();
+		taskList = (ArrayList<Task>) in.readObject();
 		Log.d(TAG, "Tasks read from file.");
 	}
 	

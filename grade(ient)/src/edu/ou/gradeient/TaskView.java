@@ -19,7 +19,7 @@ public class TaskView extends ListActivity {
 	private static final int ADD_REQUEST = 1;
 	private static final int EDIT_REQUEST = 2;
 	
-	private ArrayAdapter<Task2> arrayAdapter;
+	private ArrayAdapter<Task> arrayAdapter;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -30,7 +30,7 @@ public class TaskView extends ListActivity {
 		
 		//Set up an ArrayAdapter with data from model.
 		//This adapter contains the names of the tasks.
-		arrayAdapter = new ArrayAdapter<Task2>(this,
+		arrayAdapter = new ArrayAdapter<Task>(this,
 				android.R.layout.simple_list_item_2, android.R.id.text1,
 				GradeientApp.getModel().getTaskList()) {
 			@Override
@@ -85,7 +85,7 @@ public class TaskView extends ListActivity {
 		intent.putExtra(EditTaskActivity.Extras.TASK_STATUS,
 				EditTaskActivity.TaskStatus.EDIT_TASK);
 		//gets the task that was clicked.
-		Task2 task = (Task2) getListView().getItemAtPosition(position);
+		Task task = (Task) getListView().getItemAtPosition(position);
 		intent.putExtra(EditTaskActivity.Extras.TASK_ID, task.getId() );
 		startActivityForResult(intent, EDIT_REQUEST);
 	}
@@ -96,19 +96,12 @@ public class TaskView extends ListActivity {
 		Log.d(TAG, "A result happened!");
 		switch (requestCode) {
 			case ADD_REQUEST:
-				// If the user didn't press cancel, update the view.
-				if (resultCode == RESULT_OK) {
-					Log.d(TAG, "Updating view.");
-					//TODO does this work?
-					arrayAdapter.notifyDataSetChanged();
-				}
-				break;
+				// INTENTIONALLY FALLING THROUGH
 			case EDIT_REQUEST:
-				if (resultCode == RESULT_OK) {
-					Log.d(TAG, "Updating view.");
-					//TODO does this work?
+				// Make sure the view updates
+				if (resultCode == RESULT_OK)
 					arrayAdapter.notifyDataSetChanged();
-				}
+				break;
 			default:
 				Log.wtf(TAG, "Unknown request code: " + requestCode);
 		}

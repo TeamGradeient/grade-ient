@@ -29,11 +29,7 @@ public class MainActivity extends Activity {
 		//Do something in response to button being pressed
 		Log.d(TAG, "The task view button was pressed.");
 		
-		Intent intent = new Intent (this, TaskView.class);
-		intent.setData(null);
-		startActivity(intent);
-//		View myView = getLayoutInflater().inflate(R.layout.activity_task_view, 
-//				null);
+		startActivity(new Intent (this, TaskView.class));
 	}
 	
 	public void showEditTaskView(View view) {
