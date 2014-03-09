@@ -1,218 +1,224 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    style="@style/LayoutWithMedMargins"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context=".EditTaskActivity" >
 
-    <!--
-    TODO might consider adding back standard activity margin/padding? 
-    TODO decide what to do with accessibility strings
-    -->
-
-    <!-- Task name -->
-
-    <EditText
-        android:id="@+id/task_name"
-        style="@style/TextAppearance.EditEvent_Value"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dip"
-        android:capitalize="sentences"
-        android:focusable="true"
-        android:hint="@string/hint_task_name"
-        android:inputType="textAutoCorrect|textCapSentences"
-        android:minHeight="48dip"
-        android:singleLine="true" />
-
-    <!-- Subject name -->
-
-    <EditText
-        android:id="@+id/subject_name"
-        style="@style/TextAppearance.EditEvent_Value"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="10dip"
-        android:capitalize="sentences"
-        android:focusable="true"
-        android:hint="@string/hint_subject_name"
-        android:inputType="textAutoCorrect|textCapSentences"
-        android:minHeight="48dip"
-        android:singleLine="true" />
-
-    <!-- DATES - Read-only textview version of start/due (below) -->
-
     <LinearLayout
-        android:id="@+id/dates_row"
+        style="@style/LayoutWithMedMargins"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:focusable="true"
-        android:minHeight="48dip"
-        android:orientation="vertical"
-        android:visibility="gone" >
-
-        <TextView
-            android:id="@+id/dates_label"
-            style="@style/TextAppearance.EditEvent_LabelSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="-8dip"
-            android:text="@string/edit_task_start" />
-
-        <TextView
-            android:id="@+id/dates"
-            style="@style/TextAppearance.EditEvent_Value"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="12dp"
-            android:layout_marginRight="12dp" />
-    </LinearLayout>
-
-    <!-- Task start -->
-    <!-- Read/write version which launches the date/time pickers -->
-
-    <LinearLayout
-        android:id="@+id/start_row"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="64dip"
         android:orientation="vertical" >
 
-        <TextView
-            android:id="@+id/start_label"
-            style="@style/TextAppearance.EditEvent_LabelSmall"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/edit_task_start" />
+        <!--
+	    TODO might consider adding back standard activity margin/padding? 
+	    TODO decide what to do with accessibility strings
+	    -->
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="-6dip"
-            android:animateLayoutChanges="false"
-            android:orientation="horizontal" >
-
-            <Button
-                android:id="@+id/start_date"
-                style="@style/TextAppearance.EditEvent_SpinnerButton"
-                android:layout_width="0px"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="0dp"
-                android:layout_weight="7"
-                android:paddingRight="4dp"
-                android:singleLine="true" />
-            <!-- android:contentDescription="@string/accessibility_pick_start_date" -->
-
-            <Button
-                android:id="@+id/start_time"
-                style="@style/TextAppearance.EditEvent_SpinnerButton"
-                android:layout_width="0px"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="0dip"
-                android:layout_weight="4" />
-            <!-- android:contentDescription="@string/accessibility_pick_start_time" -->
-        </LinearLayout>
-    </LinearLayout>
-
-    <!-- Task due -->
-    <!-- Read/write version which launches the date/time pickers -->
-
-    <LinearLayout
-        android:id="@+id/due_row"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:minHeight="64dip"
-        android:orientation="vertical" >
-
-        <TextView
-            android:id="@+id/due_label"
-            style="@style/TextAppearance.EditEvent_LabelSmall"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/edit_task_due" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="-6dip"
-            android:animateLayoutChanges="false"
-            android:orientation="horizontal" >
-
-            <Button
-                android:id="@+id/due_date"
-                style="@style/TextAppearance.EditEvent_SpinnerButton"
-                android:layout_width="0px"
-                android:layout_height="wrap_content"
-                android:layout_marginRight="0dp"
-                android:layout_weight="7"
-                android:paddingRight="4dp"
-                android:singleLine="true" />
-            <!-- android:contentDescription="@string/accessibility_pick_end_date" -->
-
-            <Button
-                android:id="@+id/due_time"
-                style="@style/TextAppearance.EditEvent_SpinnerButton"
-                android:layout_width="0px"
-                android:layout_height="wrap_content"
-                android:layout_marginLeft="0dip"
-                android:layout_weight="4" />
-            <!-- android:contentDescription="@string/accessibility_pick_end_time" -->
-        </LinearLayout>
-    </LinearLayout>
-
-    <!-- Task done? -->
-    
-    <LinearLayout
-        android:id="@+id/done_row"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dip"
-        android:gravity="center_vertical"
-        android:minHeight="24dip"
-        android:orientation="horizontal" >
-
-        <CheckBox
-            android:id="@+id/is_done"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_gravity="center_vertical"
-            android:layout_marginLeft="4dp"
-            android:layout_marginRight="0dip"
-            android:gravity="center_vertical" />
-        <!-- android:contentDescription="@string/accessibility_all_day" -->
-
-        <TextView
-            android:id="@+id/is_done_label"
-            style="@style/TextAppearance.EditEvent_Small"
-            android:layout_width="0dip"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|left"
-            android:layout_weight="1"
-            android:gravity="center_vertical|left"
-            android:text="@string/edit_task_is_done" />
-    </LinearLayout>
-
-    <!-- Notes -->
-
-    <LinearLayout
-        android:id="@+id/notes_row"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="6dip"
-        android:focusable="true"
-        android:orientation="vertical" >
+        <!-- Task name -->
 
         <EditText
-            android:id="@+id/notes"
+            android:id="@+id/task_name"
             style="@style/TextAppearance.EditEvent_Value"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
+            android:layout_marginTop="4dip"
             android:capitalize="sentences"
-            android:hint="@string/hint_task_notes"
-            android:inputType="textAutoCorrect|textCapSentences|textMultiLine"
-            android:minHeight="48dip" />
+            android:focusable="true"
+            android:hint="@string/hint_task_name"
+            android:inputType="textAutoCorrect|textCapSentences"
+            android:minHeight="48dip"
+            android:singleLine="true" />
+
+        <!-- Subject name -->
+
+        <EditText
+            android:id="@+id/subject_name"
+            style="@style/TextAppearance.EditEvent_Value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dip"
+            android:capitalize="sentences"
+            android:focusable="true"
+            android:hint="@string/hint_subject_name"
+            android:inputType="textAutoCorrect|textCapSentences"
+            android:minHeight="48dip"
+            android:singleLine="true" />
+
+        <!-- DATES - Read-only textview version of start/due (below) -->
+
+        <LinearLayout
+            android:id="@+id/dates_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:focusable="true"
+            android:minHeight="48dip"
+            android:orientation="vertical"
+            android:visibility="gone" >
+
+            <TextView
+                android:id="@+id/dates_label"
+                style="@style/TextAppearance.EditEvent_LabelSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="-8dip"
+                android:text="@string/edit_task_start" />
+
+            <TextView
+                android:id="@+id/dates"
+                style="@style/TextAppearance.EditEvent_Value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="12dp"
+                android:layout_marginRight="12dp" />
+        </LinearLayout>
+
+        <!-- Task start -->
+        <!-- Read/write version which launches the date/time pickers -->
+
+        <LinearLayout
+            android:id="@+id/start_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="64dip"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/start_label"
+                style="@style/TextAppearance.EditEvent_LabelSmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/edit_task_start" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="-6dip"
+                android:animateLayoutChanges="false"
+                android:orientation="horizontal" >
+
+                <Button
+                    android:id="@+id/start_date"
+                    style="@style/TextAppearance.EditEvent_SpinnerButton"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="0dp"
+                    android:layout_weight="7"
+                    android:paddingRight="4dp"
+                    android:singleLine="true" />
+                <!-- android:contentDescription="@string/accessibility_pick_start_date" -->
+
+                <Button
+                    android:id="@+id/start_time"
+                    style="@style/TextAppearance.EditEvent_SpinnerButton"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="0dip"
+                    android:layout_weight="4" />
+                <!-- android:contentDescription="@string/accessibility_pick_start_time" -->
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Task due -->
+        <!-- Read/write version which launches the date/time pickers -->
+
+        <LinearLayout
+            android:id="@+id/due_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="64dip"
+            android:orientation="vertical" >
+
+            <TextView
+                android:id="@+id/due_label"
+                style="@style/TextAppearance.EditEvent_LabelSmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/edit_task_due" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="-6dip"
+                android:animateLayoutChanges="false"
+                android:orientation="horizontal" >
+
+                <Button
+                    android:id="@+id/due_date"
+                    style="@style/TextAppearance.EditEvent_SpinnerButton"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:layout_marginRight="0dp"
+                    android:layout_weight="7"
+                    android:paddingRight="4dp"
+                    android:singleLine="true" />
+                <!-- android:contentDescription="@string/accessibility_pick_end_date" -->
+
+                <Button
+                    android:id="@+id/due_time"
+                    style="@style/TextAppearance.EditEvent_SpinnerButton"
+                    android:layout_width="0px"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="0dip"
+                    android:layout_weight="4" />
+                <!-- android:contentDescription="@string/accessibility_pick_end_time" -->
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Task done? -->
+
+        <LinearLayout
+            android:id="@+id/done_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dip"
+            android:gravity="center_vertical"
+            android:minHeight="24dip"
+            android:orientation="horizontal" >
+
+            <CheckBox
+                android:id="@+id/is_done"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_gravity="center_vertical"
+                android:layout_marginLeft="4dp"
+                android:layout_marginRight="0dip"
+                android:gravity="center_vertical" />
+            <!-- android:contentDescription="@string/accessibility_all_day" -->
+
+            <TextView
+                android:id="@+id/is_done_label"
+                style="@style/TextAppearance.EditEvent_Small"
+                android:layout_width="0dip"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical|left"
+                android:layout_weight="1"
+                android:gravity="center_vertical|left"
+                android:text="@string/edit_task_is_done" />
+        </LinearLayout>
+
+        <!-- Notes -->
+
+        <LinearLayout
+            android:id="@+id/notes_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="6dip"
+            android:focusable="true"
+            android:orientation="vertical" >
+
+            <EditText
+                android:id="@+id/notes"
+                style="@style/TextAppearance.EditEvent_Value"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:capitalize="sentences"
+                android:hint="@string/hint_task_notes"
+                android:inputType="textAutoCorrect|textCapSentences|textMultiLine"
+                android:minHeight="48dip" />
+        </LinearLayout>
     </LinearLayout>
 
-</LinearLayout>
+</ScrollView>
