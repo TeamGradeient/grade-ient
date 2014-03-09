@@ -46,11 +46,8 @@ public class Task implements Serializable
 	/**True if the task is done, false otherwise.*/
 	private boolean isDone;
 	
-	/**The time zone in which this task was created*/
-	private DateTimeZone originTimeZone;
-	
 	/**The interval for the task*/
-	private MutableInterval taskInterval;
+	private final MutableInterval taskInterval;
 	
 	/**Comparator to compare two tasks by their due dates*/
 	public static final CompareTasksByDate BY_DUE_DATE = new CompareTasksByDate();
@@ -72,9 +69,21 @@ public class Task implements Serializable
 		start -= start % 60000;
 		end -= end % 60000;
 		taskInterval = new MutableInterval(start, end);
-		originTimeZone = DateTimeZone.getDefault();
 		id = random.nextLong();
 		if (id < 0) id = -id;
+	}
+	
+	/**
+	 * Copy constructor
+	 * @param other Task to copy
+	 */
+	public Task (Task other) {
+		id = other.id;
+		name = other.name;
+		subject = other.subject;
+		notes = other.notes;
+		isDone = other.isDone;
+		taskInterval = new MutableInterval(other.taskInterval);
 	}
 	
 	/**
@@ -129,16 +138,6 @@ public class Task implements Serializable
 	public boolean isDone ()
 	{
 		return isDone;
-	}
-	
-	/**
-	 * Gets the time zone that the user's device was set to when this
-	 * task was created.
-	 * @return The time zone
-	 */
-	public DateTimeZone getOriginTimeZone () 
-	{
-		return originTimeZone;
 	}
 	
 	/**
@@ -303,18 +302,6 @@ public class Task implements Serializable
 			taskInterval.setEndMillis(end);
 			taskInterval.setStartMillis(start);
 		}
-	}
-	
-	/**
-	 * Sets the start/end interval for this task.
-	 * @param interval the new interval for this task
-	 * @throws IllegalArgumentException if interval is null
-	 */
-	public void setTaskInterval (MutableInterval interval) {
-		if (interval == null) {
-			throw new IllegalArgumentException("Task interval cannot be null.");
-		}
-		taskInterval = interval;
 	}
 	
 	/**
