@@ -9,6 +9,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
@@ -46,6 +47,8 @@ public class TaskView extends ListActivity {
 		};
 					
 		setListAdapter(arrayAdapter);
+		getListView().setOnItemLongClickListener(new LongClickListener());
+		
 	}
 
 	@Override
@@ -88,6 +91,18 @@ public class TaskView extends ListActivity {
 		Task task = (Task) getListView().getItemAtPosition(position);
 		intent.putExtra(EditTaskActivity.Extras.TASK_ID, task.getId() );
 		startActivityForResult(intent, EDIT_REQUEST);
+	}
+	
+	private class LongClickListener 
+	implements AdapterView.OnItemLongClickListener
+	{
+		public boolean onItemLongClick(AdapterView<?> parent, View view,
+				int position, long id) {
+			Log.i(TAG,  "Long click at position " + position);
+			//TODO: Select the list item at this position so we can do
+			//something with it 
+			return true;
+		}
 	}
 	
 	@Override
