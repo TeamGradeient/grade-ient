@@ -32,7 +32,7 @@ public class TaskView extends ListActivity {
 		//Set up an ArrayAdapter with data from model.
 		//This adapter contains the names of the tasks.
 		arrayAdapter = new ArrayAdapter<Task>(this,
-				android.R.layout.simple_list_item_2, android.R.id.text1,
+				android.R.layout.simple_list_item_activated_2, android.R.id.text1,
 				GradeientApp.getModel().getTaskList()) {
 			@Override
 			public View getView(int position, View convertView, ViewGroup parent) {
@@ -45,9 +45,11 @@ public class TaskView extends ListActivity {
 				return view;
 			}
 		};
-					
+		
 		setListAdapter(arrayAdapter);
+		//getListView().setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
 		getListView().setOnItemLongClickListener(new LongClickListener());
+		getListView().setOnItemClickListener(new ClickListener());
 		
 	}
 
@@ -80,17 +82,22 @@ public class TaskView extends ListActivity {
 		return super.onOptionsItemSelected(item);
 	}
 	
-	@Override
-	protected void onListItemClick (ListView l, View v, int position, long id)
+	private class ClickListener implements AdapterView.OnItemClickListener
 	{
-		Intent intent = new Intent (this, EditTaskActivity.class);
-		//Indicate that this is an existing task to edit
-		intent.putExtra(EditTaskActivity.Extras.TASK_STATUS,
-				EditTaskActivity.TaskStatus.EDIT_TASK);
-		//gets the task that was clicked.
-		Task task = (Task) getListView().getItemAtPosition(position);
-		intent.putExtra(EditTaskActivity.Extras.TASK_ID, task.getId() );
-		startActivityForResult(intent, EDIT_REQUEST);
+
+		@Override
+		public void onItemClick(AdapterView<?> adapterView, View view, int position,
+				long id) {
+			Intent intent = new Intent (adapterView.getContext(),
+					EditTaskActivity.class);
+			//Indicate that this is an existing task to edit
+			intent.putExtra(EditTaskActivity.Extras.TASK_STATUS,
+					EditTaskActivity.TaskStatus.EDIT_TASK);
+			//gets the task that was clicked.
+			Task task = (Task) getListView().getItemAtPosition(position);
+			intent.putExtra(EditTaskActivity.Extras.TASK_ID, task.getId() );
+			startActivityForResult(intent, EDIT_REQUEST);	
+		}
 	}
 	
 	private class LongClickListener 
@@ -100,7 +107,7 @@ public class TaskView extends ListActivity {
 				int position, long id) {
 			Log.i(TAG,  "Long click at position " + position);
 			//TODO: Select the list item at this position so we can do
-			//something with it 
+			//something with it
 			return true;
 		}
 	}
