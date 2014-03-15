@@ -10,10 +10,10 @@
         android:targetSdkVersion="19" />
 
     <application
+        android:name="edu.ou.gradeient.GradeientApp"
         android:allowBackup="true"
         android:icon="@drawable/gradeient_logo"
         android:label="@string/app_name"
-        android:name="edu.ou.gradeient.GradeientApp"
         android:theme="@android:style/Theme.Holo.Light" >
         <activity
             android:name="edu.ou.gradeient.MainActivity"
@@ -25,14 +25,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="edu.ou.gradeient.TaskView"
-            android:label="@string/title_activity_task_view"
-            android:parentActivityName="edu.ou.gradeient.MainActivity" >
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value="edu.ou.gradeient.MainActivity" />
-        </activity>
-        <activity
             android:name="edu.ou.gradeient.EditTaskActivity"
             android:label="@string/title_activity_edit_task"
             android:parentActivityName="edu.ou.gradeient.MainActivity" >
@@ -40,6 +32,22 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="edu.ou.gradeient.MainActivity" />
         </activity>
+        <activity
+            android:name="edu.ou.gradeient.TaskListActivity"
+            android:label="@string/view_task"
+            android:parentActivityName="edu.ou.gradeient.MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="edu.ou.gradeient.MainActivity" />
+        </activity>
+        
+        <provider
+            android:name=".TaskProvider"
+            android:authorities="edu.ou.gradeient"
+            android:exported="false" >
+        </provider>
+
     </application>
+    
 
 </manifest>

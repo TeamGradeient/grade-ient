@@ -5,5 +5,4 @@
     android:layout_height="match_parent"
     android:background="#FFFFFF"
     android:drawSelectorOnTop="false"
-    android:orientation="vertical"
-    tools:context=".ShowTaskView" />
+    android:orientation="vertical" />

@@ -2,7 +2,34 @@ package edu.ou.gradeient;
 
 import org.joda.time.LocalDate;
 
+/**
+ * Represents a semester
+ */
 public class Semester {
+
+//	public static final class Schema implements BaseColumns {
+//		/** The URI for the Semester table */
+//		public static final Uri CONTENT_URI = Uri.withAppendedPath(
+//				TaskProvider.CONTENT_URI, "semesters");
+//		/** MIME type for a list of Semesters */
+//		public static final String CONTENT_TYPE = 
+//				ContentResolver.CURSOR_DIR_BASE_TYPE + 
+//				"/vnd." + TaskProvider.AUTHORITY + "_semesters";
+//		/** MIME type for a single Semester */
+//		public static final String CONTENT_ITEM_TYPE = 
+//				ContentResolver.CURSOR_ITEM_BASE_TYPE + 
+//				"/vnd." + TaskProvider.AUTHORITY + "_semesters";
+//
+//		/* default */ static final String TABLE = "Semester";
+//		public static final String NAME = "name";
+//		public static final String START_DATE = "start_date";
+//		public static final String END_DATE = "end_date";
+//
+//		//TODO subjects?
+//
+//		public static final String SORT_ORDER_DEFAULT = END_DATE + " ASC";
+//	}
+	
 	/** Semester ID (auto-generated; do not modify) */
 	private Long id;
 	

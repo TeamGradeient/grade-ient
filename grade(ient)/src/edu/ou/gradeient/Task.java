@@ -2,37 +2,76 @@ package edu.ou.gradeient;
 
 import java.io.Serializable;
 import java.util.Comparator;
-import java.util.Random;
 
 import org.joda.time.DateTime;
 import org.joda.time.MutableInterval;
 import org.joda.time.ReadableInterval;
 
+import android.content.ContentResolver;
+import android.content.ContentValues;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.BaseColumns;
+
 /**
  * Represents a Task.
- * TODO work time support, verification of correct time zone support,
+ * TODO work time support, correct time zone support,
  * check if it's efficient enough
- * 
- * TODO CHANGE CALLING ORDER IN EDITTASKACTIVITY
  */
 public class Task implements Serializable
 {
-	private static final long serialVersionUID = 5526917550297108374L;
+	/** Schema for the Task table in the database and ContentProvider */
+	public static final class Schema implements BaseColumns {
+		/** URI for the Task table */
+		public static final Uri CONTENT_URI = Uri.withAppendedPath(
+				TaskProvider.CONTENT_URI, "tasks");
+		/** MIME type for list of Tasks */
+		public static final String CONTENT_TYPE = 
+				ContentResolver.CURSOR_DIR_BASE_TYPE + 
+				"/vnd." + TaskProvider.AUTHORITY + "_tasks";
+		/** MIME type for single Task */
+		public static final String CONTENT_ITEM_TYPE = 
+				ContentResolver.CURSOR_ITEM_BASE_TYPE + 
+				"/vnd." + TaskProvider.AUTHORITY + "_tasks";
+
+		/* default */ static final String TABLE = "Task";
+		public static final String SUBJECT_NAME = "subject_name";
+		public static final String NAME = "name";
+		public static final String IS_DONE = "is_done";
+		public static final String START_INSTANT = "start_instant";
+		public static final String END_INSTANT = "end_instant";
+		public static final String NOTES = "notes";
+
+		public static final String[] COLUMNS = { _ID, SUBJECT_NAME, NAME,
+			IS_DONE, START_INSTANT, END_INSTANT, NOTES };
+		
+		//TODO subject object? work times?
+		
+		public static final String SORT_ORDER_DEFAULT = END_INSTANT + " ASC";
+		
+		/** ID (long not null) */
+		public static final int COL_ID = 0;
+		/** Subject name (string) */
+		public static final int COL_SUBJECT_NAME = 1;
+		/** Name (string not null) */
+		public static final int COL_NAME = 2;
+		/** Is done (int 0/1 not null) */
+		public static final int COL_IS_DONE = 3;
+		/** Start instant (long >= 0 not null) */
+		public static final int COL_START_INSTANT = 4;
+		/** End instant (long >= 0 not null) */
+		public static final int COL_END_INSTANT = 5;
+		/** Notes (string) */
+		public static final int COL_NOTES = 6;
+	}
+	
+	private static final long serialVersionUID = -2567385792745859337L;
 
 	/** Generic new task ID */
 	public static final long NEW_TASK_ID = -1;
 	
-	private static Random random = new Random();
-	
-	/** Unique ID of the task.
-	 * TODO Longs are relatively short enough that it's apparently a bad idea
-	 * to assume that there will not be collisions between randomly generated
-	 * long IDs. Once database support is implemented, the Task implementation
-	 * should set new tasks' ID to -1, and ID should be a primary key 
-	 * autoincrement field, so the database will manage the ID sequence and
-	 * keep it unique.
-	 */
-	private long id;
+	/** Unique ID of the task. */
+	private final long id;
 	
 	/**A String containing the name of this task*/
 	private String name;
@@ -75,8 +114,7 @@ public class Task implements Serializable
 		notes = "";
 		isDone = false;
 		taskInterval = new MutableInterval(start, end);
-		id = random.nextLong();
-		if (id < 0) id = -id;
+		id = NEW_TASK_ID;
 	}
 	
 	/**
@@ -90,6 +128,40 @@ public class Task implements Serializable
 		notes = other.notes;
 		isDone = other.isDone;
 		taskInterval = new MutableInterval(other.taskInterval);
+	}
+	
+	/**
+	 * Creates a Task from a cursor. Assumes the cursor is already pointing
+	 * to the correct row.
+	 * TODO is this even a correct place to put this?
+	 * @param cursor A cursor for the Task table in the database
+	 * @throws IllegalArgumentException if a value found in the database
+	 * was illegal or the cursor was null
+	 * @throws NumberFormatException if a value that was supposed to be a 
+	 * number was not actually a number
+	 */
+	public Task (Cursor cursor) {
+		if (cursor == null)
+			throw new IllegalArgumentException("cursor must not be null");
+		
+		// Get all the values as strings and parse them here, so that we can
+		// do better error checking than is provided by Cursor.
+		// (The implementation of getLong, getInt, etc. is in CursorWindow,
+		// which calls native methods to parse the values and does unhelpful
+		// things like returning 0 on error.)
+		id = Long.parseLong(cursor.getString(Schema.COL_ID));
+		setName(cursor.getString(Schema.COL_NAME));
+		setSubject(cursor.getString(Schema.COL_SUBJECT_NAME));
+		setNotes(cursor.getString(Schema.COL_NOTES));
+		
+		// Options for is done are 0 or 1. In the odd case that something else
+		// is stored, default to false.
+		String doneStr = cursor.getString(Schema.COL_IS_DONE);
+		isDone = (doneStr == null ? false : doneStr.equals("1"));
+		
+		long start = Long.parseLong(cursor.getString(Schema.COL_START_INSTANT));
+		long end = Long.parseLong(cursor.getString(Schema.COL_END_INSTANT));
+		taskInterval = new MutableInterval(start, end);
 	}
 	
 	/**
@@ -308,7 +380,7 @@ public class Task implements Serializable
 	 * Sets the new end date for the task. If the resulting end time/date is 
 	 * before start, start will be updated to be the same as end.
 	 * @param year new year, 1970-2036
-	 * @param month new month of year, 0-11
+	 * @param month new month of year, 1-12
 	 * @param day new day of month, 1-31
 	 * @throws IllegalArgumentException if day, month, or year is invalid
 	 */
@@ -361,6 +433,25 @@ public class Task implements Serializable
 	public String toString ()
 	{
 		return name;
+	}
+	
+	/**
+	 * Put the contents of this task (except ID) in a ContentValues object, 
+	 * with keys corresponding to the column names of the database table.
+	 * (The ID is not returned because it is an autoincrement primary key.
+	 * Trying to insert a value for it when adding a new task causes errors,
+	 * and it can't be updated from what the database sets it to.)
+	 * @return The ContentValues object with the task
+	 */
+	public ContentValues toContentValues() {
+		ContentValues cv = new ContentValues();
+		cv.put(Schema.SUBJECT_NAME, subject);
+		cv.put(Schema.NAME, name);
+		cv.put(Schema.IS_DONE, isDone ? 1 : 0);
+		cv.put(Schema.START_INSTANT, taskInterval.getStartMillis());
+		cv.put(Schema.END_INSTANT, taskInterval.getEndMillis());
+		cv.put(Schema.NOTES, notes);
+		return cv;
 	}
 	
 	/**
