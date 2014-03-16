@@ -7,6 +7,7 @@ import android.app.DatePickerDialog;
 import android.app.DatePickerDialog.OnDateSetListener;
 import android.app.TimePickerDialog; //TODO later, change to radial version?
 import android.app.TimePickerDialog.OnTimeSetListener;
+import android.content.ContentUris;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -36,12 +37,12 @@ public class EditTaskActivity extends Activity {
 	private TextView notesText;
 	private CheckBox doneCheckBox;
 	private Button startDateButton;
-	private Button dueDateButton;
+	private Button endDateButton;
 	private Button startTimeButton;
-	private Button dueTimeButton;
+	private Button endTimeButton;
 
 	private TimePickerDialog startTimePickerDialog;
-	private TimePickerDialog dueTimePickerDialog;
+	private TimePickerDialog endTimePickerDialog;
 	private DatePickerDialog datePickerDialog;
 	
 	private Task task;
@@ -98,18 +99,18 @@ public class EditTaskActivity extends Activity {
 				}
 				dialog = startTimePickerDialog;
 			} else {
-				DateTime due = task.getEnd();
-				if (dueTimePickerDialog == null) {
-					dueTimePickerDialog = new TimePickerDialog(
+				DateTime end = task.getEnd();
+				if (endTimePickerDialog == null) {
+					endTimePickerDialog = new TimePickerDialog(
 							EditTaskActivity.this,
-							new TimeListener(v), due.getHourOfDay(), 
-							due.getMinuteOfHour(),
+							new TimeListener(v), end.getHourOfDay(), 
+							end.getMinuteOfHour(),
 							DateFormat.is24HourFormat(EditTaskActivity.this));
 				} else {
-					dueTimePickerDialog.updateTime(due.getHourOfDay(), 
-							due.getMinuteOfHour());
+					endTimePickerDialog.updateTime(end.getHourOfDay(), 
+							end.getMinuteOfHour());
 				}
-				dialog = dueTimePickerDialog;
+				dialog = endTimePickerDialog;
 			}
 			//TODO make sure that this works and we don't need to use a 
 			// fragment or any sort of fancy management stuff
@@ -139,8 +140,6 @@ public class EditTaskActivity extends Activity {
 	private class DateClickListener implements View.OnClickListener {
 		@Override
 		public void onClick(View v) {
-			//TODO Android Cal version had a check for if activity is paused--
-			//necessary?
 			//TODO why does Android Cal implement this differently from
 			// the TimeClickListener?
 			
@@ -175,9 +174,9 @@ public class EditTaskActivity extends Activity {
 		notesText = (TextView)findViewById(R.id.notes);
 		doneCheckBox = (CheckBox)findViewById(R.id.is_done);
 		startDateButton = (Button)findViewById(R.id.start_date);
-		dueDateButton = (Button)findViewById(R.id.due_date);
+		endDateButton = (Button)findViewById(R.id.end_date);
 		startTimeButton = (Button)findViewById(R.id.start_time);
-		dueTimeButton = (Button)findViewById(R.id.due_time);
+		endTimeButton = (Button)findViewById(R.id.end_time);
 		
 		if (savedInstanceState == null)
 			setTaskFromIntent();
@@ -193,9 +192,9 @@ public class EditTaskActivity extends Activity {
 		}
 		updateTimeDateButtons();
 		startDateButton.setOnClickListener(new DateClickListener());
-		dueDateButton.setOnClickListener(new DateClickListener());
+		endDateButton.setOnClickListener(new DateClickListener());
 		startTimeButton.setOnClickListener(new TimeClickListener());
-		dueTimeButton.setOnClickListener(new TimeClickListener());
+		endTimeButton.setOnClickListener(new TimeClickListener());
 		nameText.setTextKeepState(task.getName());
 		subjectText.setTextKeepState(task.getSubject());
 		notesText.setTextKeepState(task.getNotes());
@@ -242,9 +241,9 @@ public class EditTaskActivity extends Activity {
 				// loader here because we do actually need to block until
 				// the operation completes.)
 				Cursor cursor = getContentResolver().query(
-						Uri.withAppendedPath(
-								Task.Schema.CONTENT_URI, "" + taskId),
-								null, null, null, null);
+						ContentUris.withAppendedId(Task.Schema.CONTENT_URI, 
+								taskId),
+						null, null, null, null);
 				try {
 					if (cursor.getCount() > 0) {
 						cursor.moveToNext();
@@ -303,8 +302,8 @@ public class EditTaskActivity extends Activity {
 		long endMillis = task.getEndMillis();
 		setDate(startDateButton, startMillis);
 		setTime(startTimeButton, startMillis);
-		setDate(dueDateButton, endMillis);
-		setTime(dueTimeButton, endMillis);
+		setDate(endDateButton, endMillis);
+		setTime(endTimeButton, endMillis);
 	}
 
 	private void setDate(TextView view, long millis) {
@@ -374,8 +373,9 @@ public class EditTaskActivity extends Activity {
 								task.toContentValues());
 						break;
 					case TaskStatus.EDIT_TASK:
-						getContentResolver().update(Uri.withAppendedPath(
-								Task.Schema.CONTENT_URI, "" + task.getId()), 
+						getContentResolver().update(
+								ContentUris.withAppendedId(
+										Task.Schema.CONTENT_URI, task.getId()),
 								task.toContentValues(), null, null);
 						break;
 					default:
