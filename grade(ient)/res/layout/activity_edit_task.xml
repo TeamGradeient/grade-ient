@@ -46,7 +46,7 @@
             android:minHeight="48dip"
             android:singleLine="true" />
 
-        <!-- DATES - Read-only textview version of start/due (below) -->
+        <!-- DATES - Read-only textview version of start/end (below) -->
 
         <LinearLayout
             android:id="@+id/dates_row"
@@ -120,22 +120,22 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Task due -->
+        <!-- Task end -->
         <!-- Read/write version which launches the date/time pickers -->
 
         <LinearLayout
-            android:id="@+id/due_row"
+            android:id="@+id/end_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:minHeight="64dip"
             android:orientation="vertical" >
 
             <TextView
-                android:id="@+id/due_label"
+                android:id="@+id/end_label"
                 style="@style/TextAppearance.EditEvent_LabelSmall"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/edit_task_due" />
+                android:text="@string/edit_task_end" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -145,7 +145,7 @@
                 android:orientation="horizontal" >
 
                 <Button
-                    android:id="@+id/due_date"
+                    android:id="@+id/end_date"
                     style="@style/TextAppearance.EditEvent_SpinnerButton"
                     android:layout_width="0px"
                     android:layout_height="wrap_content"
@@ -156,7 +156,7 @@
                 <!-- android:contentDescription="@string/accessibility_pick_end_date" -->
 
                 <Button
-                    android:id="@+id/due_time"
+                    android:id="@+id/end_time"
                     style="@style/TextAppearance.EditEvent_SpinnerButton"
                     android:layout_width="0px"
                     android:layout_height="wrap_content"

@@ -34,7 +34,7 @@
         </activity>
         <activity
             android:name="edu.ou.gradeient.TaskListActivity"
-            android:label="@string/view_task"
+            android:label="@string/title_activity_task_view"
             android:parentActivityName="edu.ou.gradeient.MainActivity" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
