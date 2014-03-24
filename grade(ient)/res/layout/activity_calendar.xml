@@ -8,9 +8,8 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context=".CalendarActivity" >
 
-    <TextView
+    <edu.ou.gradeient.CalendarTaskView
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/welcome_message"/>
+        android:layout_height="wrap_content"/>
 
 </RelativeLayout>
