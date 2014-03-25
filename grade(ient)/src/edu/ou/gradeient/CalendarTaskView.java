@@ -27,7 +27,7 @@ public class CalendarTaskView extends View {
 	private void initializePaints()
 	{	
 		daySeparatorPaint = new Paint ();
-		daySeparatorPaint.setARGB(255,  0,  0,  255);
+		daySeparatorPaint.setARGB(255,  100,  100,  100);
 		daySeparatorPaint.setStyle(Paint.Style.FILL);
 		
 		dayTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -52,8 +52,10 @@ public class CalendarTaskView extends View {
 		int width = canvas.getWidth();
 		while (currentDay < days.length)
 		{
-			canvas.drawLine(0, dayHeight*currentDay ,  width,  
-					dayHeight*currentDay, daySeparatorPaint);
+			//Draw separators
+			canvas.drawRect(0,  dayHeight*currentDay,  width,  
+					dayHeight*currentDay+5, daySeparatorPaint);
+			//Draw text for each day
 			canvas.drawText(days[currentDay] , 5,  
 					dayHeight*currentDay+50, dayTextPaint);
 			++currentDay;
