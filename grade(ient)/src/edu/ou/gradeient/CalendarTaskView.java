@@ -6,11 +6,9 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
 import android.view.View;
-import android.graphics.Typeface;
 
 public class CalendarTaskView extends View {
-	
-	Paint myPaint;
+
 	Paint daySeparatorPaint;
 	Paint dayTextPaint;
 	
@@ -27,20 +25,15 @@ public class CalendarTaskView extends View {
 		initializePaints();
 	}
 	private void initializePaints()
-	{
-		myPaint = new Paint (Paint.ANTI_ALIAS_FLAG);
-		myPaint.setARGB(255,  25,  100,  30);
-		myPaint.setStyle(Paint.Style.FILL);
-		
+	{	
 		daySeparatorPaint = new Paint ();
 		daySeparatorPaint.setARGB(255,  0,  0,  255);
 		daySeparatorPaint.setStyle(Paint.Style.FILL);
 		
 		dayTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-		//dayTextPaint.setTypeface(Typeface.DEFAULT);
+		dayTextPaint.setTypeface(Typeface.DEFAULT);
 		dayTextPaint.setTextSize(50);
-		dayTextPaint.setARGB(255,  0,  0,  0);
-		
+		dayTextPaint.setARGB(255,  100,  100,  100);	
 	}
 	
 	@Override
@@ -48,10 +41,10 @@ public class CalendarTaskView extends View {
 	{
 		super.onDraw(canvas);
 		String [] days = new String [] {"22", "23", "24", "25", "26", "27"};
-		drawDaySeparators(days, canvas);
+		drawBackground(days, canvas);
 	}
 	
-	private void drawDaySeparators(String[] days, Canvas canvas)
+	private void drawBackground(String[] days, Canvas canvas)
 	{
 		float height = canvas.getHeight();
 		float dayHeight = height/days.length;
@@ -67,8 +60,4 @@ public class CalendarTaskView extends View {
 		}
 	}
 	
-	private void drawDayText(int[] days, Canvas canvas)
-	{
-		
-	}
 }
