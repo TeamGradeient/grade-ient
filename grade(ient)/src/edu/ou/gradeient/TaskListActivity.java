@@ -17,6 +17,7 @@ import android.view.View;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
+import android.widget.AdapterView;
 
 // loader manager methods from 
 // http://www.androiddesignpatterns.com/2012/07/understanding-loadermanager.html
@@ -97,6 +98,9 @@ public class TaskListActivity extends ListActivity
 		// lifecycle, will receive any new loads once they have completed,
 		// and will report this new data back to the 'mCallbacks' object.
 		getLoaderManager().initLoader(LOADER_ID, null, callbacks);
+		
+		//Add a listener to handle long clicks
+		getListView().setOnItemLongClickListener(new LongClickListener());
 	}
 
 	@Override
@@ -138,6 +142,18 @@ public class TaskListActivity extends ListActivity
 		// Indicate that it is the task with the given ID that should be edited
 		intent.putExtra(EditTaskActivity.Extras.TASK_ID, id);
 		startActivityForResult(intent, EDIT_REQUEST);
+	}
+	
+	private class LongClickListener 
+	implements AdapterView.OnItemLongClickListener
+	{
+		@Override
+		public boolean onItemLongClick(AdapterView<?> parent, View view, 
+				int position,long id) {
+			System.out.println("Long click at position " + position);
+			//TODO: Do something with the click!
+			return true;
+		}
 	}
 	
 	@Override
