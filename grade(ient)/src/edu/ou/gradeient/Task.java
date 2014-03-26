@@ -63,6 +63,11 @@ public class Task implements Serializable
 		public static final int COL_END_INSTANT = 5;
 		/** Notes (string) */
 		public static final int COL_NOTES = 6;
+		
+		/** Selection/where clause for selecting tasks whose start/end interval
+		 * includes a certain instant in milliseconds (requires 1 argument) */
+		public static final String SELECT_BETWEEN_START_END = "? between " 
+				+ START_INSTANT + " and " + END_INSTANT;
 	}
 	
 	private static final long serialVersionUID = -2567385792745859337L;
