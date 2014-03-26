@@ -68,6 +68,10 @@ public class Task implements Serializable
 		 * includes a certain instant in milliseconds (requires 1 argument) */
 		public static final String SELECT_BETWEEN_START_END = "? between " 
 				+ START_INSTANT + " and " + END_INSTANT;
+		public static final String SELECT_IN_RANGE = 
+				"(? between " + START_INSTANT + " and " + END_INSTANT + ") "
+				+ "or (" + START_INSTANT + " between ? and ?)"
+				+ " or (" + END_INSTANT + " between ? and ?)";
 	}
 	
 	private static final long serialVersionUID = -2567385792745859337L;
