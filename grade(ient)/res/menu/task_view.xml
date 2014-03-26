@@ -3,7 +3,7 @@
     <!-- Add task -->
     <item
         android:id="@+id/action_add_task"
-        android:showAsAction="always"
+        android:showAsAction="ifRoom"
         android:icon="@drawable/ic_action_new"
         android:title="@string/action_add_task"/>
     <item

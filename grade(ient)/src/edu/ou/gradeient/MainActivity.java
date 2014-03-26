@@ -3,10 +3,12 @@ package edu.ou.gradeient;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.View;
 
+/**
+ * Entry point activity for the app
+ */
 public class MainActivity extends Activity {
 	
 	private static final String TAG = "MainActivity";
@@ -26,16 +28,10 @@ public class MainActivity extends Activity {
 	
 	public void showTaskView (View view)
 	{
-		//Do something in response to button being pressed
-		Log.d(TAG, "The task view button was pressed.");
-		
-		startActivity(new Intent (this, TaskView.class));
+		startActivity(new Intent (this, TaskListActivity.class));
 	}
 	
 	public void showEditTaskView(View view) {
-		Log.d(TAG, "The add task button was pressed.");
-		Intent intent = new Intent(this, EditTaskActivity.class);
-		startActivity(intent);
+		startActivity(new Intent(this, EditTaskActivity.class));
 	}
-
 }

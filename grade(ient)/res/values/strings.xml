@@ -8,15 +8,16 @@
     <string name="add_task">Add Task</string>
     <string name="title_activity_task_view">Tasks</string>
     <string name="welcome_message">Welcome to grade(ient)! :)</string>
-    
+
     <!-- Edit task -->
     <string name="title_activity_edit_task">Edit Task</string>
     <string name="hint_task_name">Task name</string>
     <string name="hint_subject_name">Subject name</string>
     <string name="edit_task_start">START</string>
-    <string name="edit_task_due">DUE</string>
+    <string name="edit_task_end">DUE</string>
     <string name="edit_task_is_done">DONE</string>
     <string name="hint_task_notes">Notes</string>
     <string name="action_accept_add_task">Confirm changes</string>
     <string name="action_cancel_add_task">Cancel changes</string>
+
 </resources>

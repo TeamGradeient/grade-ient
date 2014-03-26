@@ -1,4 +1,4 @@
-package edu.ou.gradeient.db;
+package edu.ou.gradeient;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -13,14 +13,42 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+/**
+ * SQLiteOpenHelper for accessing the task database
+ */
 public class Database extends SQLiteOpenHelper {
+	private static final String TAG = "Database";
 	private static final int DB_VERSION = 1;
 	private static final String DB_NAME = "grade-ient.db";
-	private static final String TAG = "grade(ient)DB";
-	private Context context;
+	private static Database instance;
 	
-	public Database(Context context) {
-		super(context, DB_NAME, null, DB_VERSION);
+	private Context context;
+
+	/**
+	 * Get the shared Database/SQLiteOpenHelper instance. 
+	 * DO NOT USE THIS AS PART OF STATIC INITIALIZATION.
+	 * @return The Database instance
+	 * @throws IllegalStateException if GradeientApp.getAppContext() throws
+	 * because no instances of GradeientApp had been created yet
+	 */
+	public static synchronized Database getHelper() {
+		return getHelper(GradeientApp.getAppContext());
+	}
+	
+	/**
+	 * Get the shared Database/SQLiteOpenHelper instance.
+	 * @param context The context to use to get the Application context
+	 * @return The Database instance
+	 */
+	public static synchronized Database getHelper(Context context) {
+		if (instance == null)
+			instance = new Database(context);
+		return instance;
+	}
+
+	private Database(Context context) {
+		// Use the application context to avoid leaking an individual context
+		super(context.getApplicationContext(), DB_NAME, null, DB_VERSION);
 		this.context = context;
 	}
 
@@ -31,10 +59,10 @@ public class Database extends SQLiteOpenHelper {
 			db.execSQL("PRAGMA foreign_keys=ON;");
 		}
 		try {
-			executeScript(db, "db_create.sql");
+			executeScript(db, "db_create_task.sql");
 		} catch (IOException ex) {
 			//TODO what to do here?
-			Log.w(TAG, ex);
+			Log.e(TAG, "Error creating database", ex);
 		}
 	}
 
@@ -68,8 +96,11 @@ public class Database extends SQLiteOpenHelper {
 				text.append('\n');
 			}
 		} finally {
-			if (input != null) input.close();
-			if (reader != null) reader.close();
+			try {
+				if (reader != null) reader.close();
+			} finally {
+				if (input != null) input.close();
+			}
 		}
 		String[] statements = Pattern.compile(";----").split(text);
 		//TODO make sure this works if there are comments in the SQL
