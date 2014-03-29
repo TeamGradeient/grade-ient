@@ -28,4 +28,11 @@
         android:text="@string/add_task"
         android:onClick="showEditTaskView" />
 
+    <ImageButton
+        android:id="@+id/button_showCalendar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/calendar_icon"
+        android:onClick= "showCalendarView" />
+
 </LinearLayout>

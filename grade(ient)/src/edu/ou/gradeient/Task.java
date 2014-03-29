@@ -64,10 +64,21 @@ public class Task implements Serializable
 		/** Notes (string) */
 		public static final int COL_NOTES = 6;
 		
+<<<<<<< HEAD
 		/** Get a URI for the given date range (in milliseconds since epoch) */
 		public static Uri getUriForRange(long start, long end) {
 			return Uri.withAppendedPath(CONTENT_URI, start + "/" + end);
 		}
+=======
+		/** Selection/where clause for selecting tasks whose start/end interval
+		 * includes a certain instant in milliseconds (requires 1 argument) */
+		public static final String SELECT_BETWEEN_START_END = "? between " 
+				+ START_INSTANT + " and " + END_INSTANT;
+		public static final String SELECT_IN_RANGE = 
+				"(? between " + START_INSTANT + " and " + END_INSTANT + ") "
+				+ "or (" + START_INSTANT + " between ? and ?)"
+				+ " or (" + END_INSTANT + " between ? and ?)";
+>>>>>>> calendar-view
 	}
 	
 	private static final long serialVersionUID = -2567385792745859337L;

@@ -34,4 +34,8 @@ public class MainActivity extends Activity {
 	public void showEditTaskView(View view) {
 		startActivity(new Intent(this, EditTaskActivity.class));
 	}
+	
+	public void showCalendarView(View view) {
+		startActivity(new Intent (this, CalendarActivity.class));
+	}
 }
