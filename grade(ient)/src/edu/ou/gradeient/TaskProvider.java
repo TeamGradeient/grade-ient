@@ -1,5 +1,7 @@
 package edu.ou.gradeient;
 
+import java.util.List;
+
 import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -19,9 +21,13 @@ import android.util.Log;
  * This is a ContentProvider for accessing the database of tasks, subjects,
  * and semesters. (Currently, all the subject and semester parts are commented.)
  * The data is accessed by querying the URIs defined in the classes
- * corresponding to each table (Task, Subject, etc.). You can also append a
- * number to the end of (for example) the Task URI (using Uri.withAppenededPath)
- * to get only the task with that ID. 
+ * corresponding to each table (Task, Subject, etc.). 
+ * 
+ * To get only the task/etc. with a specific ID, use ContentUris.withAppendedId
+ * to append the ID to the URI.
+ * 
+ * To get tasks that overlap a certain date range, use Uri.withAppendedPath
+ * to append start_millis/end_millis to the task table URI.
  */
 public class TaskProvider extends ContentProvider {
 	private static final String TAG = "TaskProvider";
@@ -34,21 +40,31 @@ public class TaskProvider extends ContentProvider {
 	// helper constants for use with the UriMatcher
 	private static final int TASKS = 1;
 	private static final int TASK_ID = 2;
-//	private static final int SUBJECTS = 3;
-//	private static final int SUBJECT_ID = 4;
-//	private static final int SEMESTERS = 5;
-//	private static final int SEMESTER_ID = 6;
+	private static final int TASK_DATES = 3;
+//	private static final int SUBJECTS = 4;
+//	private static final int SUBJECT_ID = 5;
+//	private static final int SEMESTERS = 6;
+//	private static final int SEMESTER_ID = 7;
 	private static final UriMatcher URI_MATCHER;
 	// prepare the UriMatcher
 	static {
 		URI_MATCHER = new UriMatcher(UriMatcher.NO_MATCH);
 		URI_MATCHER.addURI(AUTHORITY, "tasks", TASKS);
 		URI_MATCHER.addURI(AUTHORITY, "tasks/#", TASK_ID);
+		URI_MATCHER.addURI(AUTHORITY, "tasks/#/#", TASK_DATES);
 //		URI_MATCHER.addURI(AUTHORITY, "subjects", SUBJECTS);
 //		URI_MATCHER.addURI(AUTHORITY, "subjects/#", SUBJECT_ID);
 //		URI_MATCHER.addURI(AUTHORITY, "semesters", SEMESTERS);
 //		URI_MATCHER.addURI(AUTHORITY, "semesters/#", SEMESTER_ID);
 	}
+	
+	/** "where" clause template (for TextUtils.expandTemplate) for getting
+	 * tasks that overlap a certain date range */
+	private static final String TASK_DATES_WHERE = 
+			"(^1 between " + Task.Schema.START_INSTANT + " and " + 
+					Task.Schema.END_INSTANT + ") "
+			+ "or (" + Task.Schema.START_INSTANT + " between ^1 and ^2)"
+			+ " or (" + Task.Schema.END_INSTANT + " between ^1 and ^2)";
 	
 	@Override
 	public boolean onCreate() {
@@ -65,6 +81,18 @@ public class TaskProvider extends ContentProvider {
 			String[] selectionArgs, String sortOrder) {
 		SQLiteQueryBuilder builder = new SQLiteQueryBuilder();
 		int uriMatch = URI_MATCHER.match(uri);
+		
+		// Get the start and end date segments of the URI if applicable
+		if (uriMatch == TASK_DATES) {
+			List<String> segments = uri.getPathSegments();
+			if (segments.size() < 2) // shouldn't happen, but check anyway
+				throw new IllegalArgumentException("Unsupported URI: " + uri);
+			String start = segments.get(segments.size() - 2);
+			String end = segments.get(segments.size() - 1);
+			builder.appendWhereEscapeString(TextUtils.expandTemplate(
+					TASK_DATES_WHERE, start, end).toString());
+		}
+		
 		// In the case of TASK_ID, SUBJECT_ID, or SEMESTER_ID, limit to
 		// returning the one result matching the requested ID.
 		switch (uriMatch) {
@@ -78,6 +106,7 @@ public class TaskProvider extends ContentProvider {
 		// Choose the correct table (and the sort order if relevant)
 		switch (uriMatch) {
 			case TASKS:
+			case TASK_DATES:
 				if (TextUtils.isEmpty(sortOrder))
 					sortOrder = Task.Schema.SORT_ORDER_DEFAULT;
 				// falling through
