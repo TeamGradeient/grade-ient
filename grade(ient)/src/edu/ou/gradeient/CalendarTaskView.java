@@ -4,19 +4,35 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 
+import android.app.ActionBar;
+import android.app.Activity;
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
+import android.util.TypedValue;
 import android.view.View;
 
 public class CalendarTaskView extends View {
+	
+	final static int DAY_HEIGHT = 200;
 	
 	Paint daySeparatorPaint;
 	Paint dayNameTextPaint;
 	Paint dayNumberTextPaint;
 	Paint currentTimeBarPaint;
+	
+	DisplayMetrics displaymetrics = new DisplayMetrics();
+	
+	int absoluteHeight;
+	int absoluteWidth;
+	int visibleHeight;
+	int actionBarHeight;
+	
+	float dayHeight;
 
 	Calendar startDate = new GregorianCalendar();
 	Calendar endDate = new GregorianCalendar();
@@ -29,18 +45,39 @@ public class CalendarTaskView extends View {
 
 	public CalendarTaskView(Context context) {
 		super(context);
-		initializePaints();
-		setDisplayDates();
+		init();
 	}
 	public CalendarTaskView(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		initializePaints();
-		setDisplayDates();
+		init();
 	}
 	public CalendarTaskView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
+		init();
+	}
+	
+	private void init()
+	{
 		initializePaints();
 		setDisplayDates();
+
+		startTime = startDate.getTimeInMillis();
+		endTime = endDate.getTimeInMillis();
+		timeInterval= endTime-startTime;
+		
+		((Activity) getContext()).getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+		absoluteHeight = displaymetrics.heightPixels;
+		absoluteWidth = displaymetrics.widthPixels;
+		setVisibleHeight();
+	}
+	
+	private void setVisibleHeight()
+	{
+		TypedValue tv = new TypedValue();
+		this.getContext().getTheme().resolveAttribute(android.R.attr.actionBarSize, tv, true);
+		int actionBarHeight = getResources().getDimensionPixelSize(tv.resourceId);
+		actionBarHeight *= 2;
+		visibleHeight = absoluteHeight - actionBarHeight;
 	}
 	
 	/**This is just a method to set up dates to make testing easier*/
@@ -56,8 +93,8 @@ public class CalendarTaskView extends View {
 		endDate.set(Calendar.MINUTE, 0);
 		endDate.set(Calendar.HOUR_OF_DAY, 0);
 
-		startDate.add(Calendar.DAY_OF_YEAR,  -10);
-		endDate.add(Calendar.DAY_OF_YEAR, 10); 
+		startDate.add(Calendar.DAY_OF_YEAR,  0);
+		endDate.add(Calendar.DAY_OF_YEAR, 3); 
 	}
 	
 	private void initializePaints()
@@ -81,8 +118,20 @@ public class CalendarTaskView extends View {
 		currentTimeBarPaint.setStyle(Paint.Style.FILL);
 	}
 
-	//TODO: Implement onMeasure so that we don't have to set a minimum
-	//height for our view. 
+	
+	/**Rough implementation of onMeasure method*/
+	@Override
+	public void onMeasure(int x, int y)
+	{	
+		setVisibleHeight();
+		float numberOfDays = timeInterval/86400000;
+		if (DAY_HEIGHT*numberOfDays < visibleHeight) {
+			setMeasuredDimension(MeasureSpec.getSize(x), visibleHeight);
+		}
+		else {
+			setMeasuredDimension(MeasureSpec.getSize(x), (int) (numberOfDays*DAY_HEIGHT));	
+		}
+	}
 
 	@Override
 	public void onDraw(Canvas canvas)
@@ -94,14 +143,9 @@ public class CalendarTaskView extends View {
 	}
 	
 	private void drawTimeBar(Canvas canvas)
-	{
-		startTime = startDate.getTimeInMillis();
-		endTime = endDate.getTimeInMillis();
-		
+	{	
 		if (currentTime < endTime && currentTime > startTime)
 		{
-			timeInterval= endTime-startTime;
-			System.out.println(timeInterval);
 			timeSinceStart = currentTime-startTime;
 			canvas.drawRect(0,  timeSinceStart/timeInterval*canvas.getHeight(), 
 					canvas.getWidth(), 
