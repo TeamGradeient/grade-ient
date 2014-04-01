@@ -16,31 +16,50 @@ public class CalendarTaskView extends View {
 	Paint daySeparatorPaint;
 	Paint dayNameTextPaint;
 	Paint dayNumberTextPaint;
+	Paint currentTimeBarPaint;
 
 	Calendar startDate = new GregorianCalendar();
 	Calendar endDate = new GregorianCalendar();
+	
+	float startTime;
+	float endTime;
+	float currentTime = System.currentTimeMillis();
+	float timeInterval;
+	float timeSinceStart;
 
 	public CalendarTaskView(Context context) {
 		super(context);
 		initializePaints();
-		
-		startDate.add(Calendar.DAY_OF_YEAR,  3);
-		endDate.add(Calendar.DAY_OF_YEAR, 9); 
+		setDisplayDates();
 	}
 	public CalendarTaskView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		initializePaints();
-		
-		startDate.add(Calendar.DAY_OF_YEAR,  3);
-		endDate.add(Calendar.DAY_OF_YEAR, 9); 
+		setDisplayDates();
 	}
 	public CalendarTaskView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 		initializePaints();
-
-		startDate.add(Calendar.DAY_OF_YEAR,  3);
-		endDate.add(Calendar.DAY_OF_YEAR, 9); 
+		setDisplayDates();
 	}
+	
+	/**This is just a method to set up dates to make testing easier*/
+	private void setDisplayDates()
+	{
+		startDate.set(Calendar.MILLISECOND, 0);
+		startDate.set(Calendar.SECOND, 0);
+		startDate.set(Calendar.MINUTE, 0);
+		startDate.set(Calendar.HOUR_OF_DAY, 0);
+		
+		endDate.set(Calendar.MILLISECOND, 0);
+		endDate.set(Calendar.SECOND, 0);
+		endDate.set(Calendar.MINUTE, 0);
+		endDate.set(Calendar.HOUR_OF_DAY, 0);
+
+		startDate.add(Calendar.DAY_OF_YEAR,  -10);
+		endDate.add(Calendar.DAY_OF_YEAR, 10); 
+	}
+	
 	private void initializePaints()
 	{	
 		daySeparatorPaint = new Paint ();
@@ -56,6 +75,10 @@ public class CalendarTaskView extends View {
 		dayNumberTextPaint.setTypeface(Typeface.DEFAULT);
 		dayNumberTextPaint.setTextSize(50);
 		dayNumberTextPaint.setARGB(255,  100,  100,  100);	
+		
+		currentTimeBarPaint = new Paint();
+		currentTimeBarPaint.setARGB(150, 200, 0, 0);
+		currentTimeBarPaint.setStyle(Paint.Style.FILL);
 	}
 
 	//TODO: Implement onMeasure so that we don't have to set a minimum
@@ -66,7 +89,35 @@ public class CalendarTaskView extends View {
 	{
 		super.onDraw(canvas);
 		drawBackground(canvas);
+		drawTasks(canvas);
+		drawTimeBar(canvas);
 	}
+	
+	private void drawTimeBar(Canvas canvas)
+	{
+		startTime = startDate.getTimeInMillis();
+		endTime = endDate.getTimeInMillis();
+		
+		if (currentTime < endTime && currentTime > startTime)
+		{
+			timeInterval= endTime-startTime;
+			System.out.println(timeInterval);
+			timeSinceStart = currentTime-startTime;
+			canvas.drawRect(0,  timeSinceStart/timeInterval*canvas.getHeight(), 
+					canvas.getWidth(), 
+					timeSinceStart/timeInterval*canvas.getHeight() + 10, 
+					currentTimeBarPaint);
+			return;
+		}
+		System.out.println("Current time not within interval of display.");
+		return;
+	}
+	
+	private void drawTasks(Canvas canvas)
+	{
+		
+	}
+	
 
 	//TODO: This definitely won't work if startDate and endDate are in 
 	//different years. However, this works as a temporary solution.
