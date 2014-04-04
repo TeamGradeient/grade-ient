@@ -3,11 +3,8 @@ package edu.ou.gradeient;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Locale;
-
-import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Context;
-import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
@@ -94,22 +91,25 @@ public class CalendarTaskView extends View {
 		endDate.set(Calendar.HOUR_OF_DAY, 0);
 
 		startDate.add(Calendar.DAY_OF_YEAR,  0);
-		endDate.add(Calendar.DAY_OF_YEAR, 3); 
+		endDate.add(Calendar.DAY_OF_YEAR, 4); 
 	}
 	
 	private void initializePaints()
 	{	
+		Typeface roboto = Typeface.createFromAsset(this.getContext().getAssets(), 
+				"Roboto-Regular.ttf");
+		
 		daySeparatorPaint = new Paint ();
 		daySeparatorPaint.setARGB(255,  100,  100,  100);
 		daySeparatorPaint.setStyle(Paint.Style.FILL);
 
 		dayNameTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-		dayNameTextPaint.setTypeface(Typeface.DEFAULT);
+		dayNameTextPaint.setTypeface(roboto);
 		dayNameTextPaint.setTextSize(30);
 		dayNameTextPaint.setARGB(255,  100,  100,  100);	
 		
 		dayNumberTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-		dayNumberTextPaint.setTypeface(Typeface.DEFAULT);
+		dayNumberTextPaint.setTypeface(roboto);
 		dayNumberTextPaint.setTextSize(50);
 		dayNumberTextPaint.setARGB(255,  100,  100,  100);	
 		
