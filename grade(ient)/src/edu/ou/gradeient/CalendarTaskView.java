@@ -12,10 +12,15 @@ import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.View;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 public class CalendarTaskView extends View {
 	
+	/**Minimum height of a day*/
 	final static int DAY_HEIGHT = 200;
+	/**Distance between left edge of screen and the leftmost task*/
+	final static float DISTANCE_FROM_EDGE = 50;
 	
 	Paint daySeparatorPaint;
 	Paint dayNameTextPaint;
@@ -46,11 +51,26 @@ public class CalendarTaskView extends View {
 	}
 	public CalendarTaskView(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		init();
+		init(attrs);
 	}
 	public CalendarTaskView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 		init();
+	}
+
+	private void init(AttributeSet attrs)
+	{
+		initializePaints();
+		setDisplayDates();
+
+		startTime = startDate.getTimeInMillis();
+		endTime = endDate.getTimeInMillis();
+		timeInterval= endTime-startTime;
+		
+		((Activity) getContext()).getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
+		absoluteHeight = displaymetrics.heightPixels;
+		absoluteWidth = displaymetrics.widthPixels;
+		setVisibleHeight();
 	}
 	
 	private void init()
@@ -66,6 +86,46 @@ public class CalendarTaskView extends View {
 		absoluteHeight = displaymetrics.heightPixels;
 		absoluteWidth = displaymetrics.widthPixels;
 		setVisibleHeight();
+	}
+	
+	private void drawTask(Canvas canvas, int numberOfTasks)
+	{
+		
+	}
+	
+	/**Finds the time represented by a given y-position on the screen*/
+	private float findTimeFromYPosition(float yPosition)
+	{
+		//If the pixel is not on the screen, return -1.
+		//This should never happen. 
+		if (yPosition < 0 || yPosition > visibleHeight) {
+			return -1;
+		}
+		//otherwise, calculate and return the time in milliseconds
+		return yPosition*timeInterval/getHeight() - startTime;
+	}
+	
+	/**Finds the y-position on the screen for a given time.*/
+	private float findYPosition(float milliseconds)
+	{
+		//If time is outside the interval between start
+		//and end times, return -1 
+		if (milliseconds < startTime || milliseconds > endTime) {
+			return -1;
+		}
+		//Otherwise, calculate and return the position on the screen
+		return (milliseconds - startTime)*getHeight()/timeInterval;
+	}
+	
+	/**Probably not going to use this method*/
+	public void populateLayoutWithTasks(LinearLayout ll)
+	{
+		TextView tv = new TextView(this.getContext());
+		tv.setText("Test");
+		ll.addView(tv);
+		TextView tv2 = new TextView(this.getContext());
+		tv2.setText("another test!!");
+		ll.addView(tv2);
 	}
 	
 	private void setVisibleHeight()
