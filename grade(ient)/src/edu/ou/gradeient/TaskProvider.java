@@ -1,5 +1,7 @@
 package edu.ou.gradeient;
 
+import java.util.List;
+
 import android.content.ContentProvider;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -19,9 +21,13 @@ import android.util.Log;
  * This is a ContentProvider for accessing the database of tasks, subjects,
  * and semesters. (Currently, all the subject and semester parts are commented.)
  * The data is accessed by querying the URIs defined in the classes
- * corresponding to each table (Task, Subject, etc.). You can also append a
- * number to the end of (for example) the Task URI (using Uri.withAppenededPath)
- * to get only the task with that ID. 
+ * corresponding to each table (Task, Subject, etc.). 
+ * 
+ * To get only the task/etc. with a specific ID, use ContentUris.withAppendedId
+ * to append the ID to the URI.
+ * 
+ * To get tasks that overlap a certain date range, use Uri.withAppendedPath
+ * to append start_millis/end_millis to the task table URI.
  */
 public class TaskProvider extends ContentProvider {
 	private static final String TAG = "TaskProvider";
@@ -34,21 +40,37 @@ public class TaskProvider extends ContentProvider {
 	// helper constants for use with the UriMatcher
 	private static final int TASKS = 1;
 	private static final int TASK_ID = 2;
-//	private static final int SUBJECTS = 3;
-//	private static final int SUBJECT_ID = 4;
-//	private static final int SEMESTERS = 5;
-//	private static final int SEMESTER_ID = 6;
+	private static final int TASK_DATES = 3;
+	private static final int TASK_WORK_INTERVALS = 4;
+	private static final int TASK_WORK_INTERVAL_ID = 5;
+	private static final int TASK_WORK_INTERVALS_TASK_ID = 6;
+//	private static final int SUBJECTS = 10;
+//	private static final int SUBJECT_ID = 11;
+//	private static final int SEMESTERS = 20;
+//	private static final int SEMESTER_ID = 21;
 	private static final UriMatcher URI_MATCHER;
 	// prepare the UriMatcher
 	static {
 		URI_MATCHER = new UriMatcher(UriMatcher.NO_MATCH);
 		URI_MATCHER.addURI(AUTHORITY, "tasks", TASKS);
 		URI_MATCHER.addURI(AUTHORITY, "tasks/#", TASK_ID);
+		URI_MATCHER.addURI(AUTHORITY, "tasks/#/#", TASK_DATES);
+		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals", TASK_WORK_INTERVALS);
+		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals/#", TASK_WORK_INTERVAL_ID);
+		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals/task/#", TASK_WORK_INTERVALS_TASK_ID);
 //		URI_MATCHER.addURI(AUTHORITY, "subjects", SUBJECTS);
 //		URI_MATCHER.addURI(AUTHORITY, "subjects/#", SUBJECT_ID);
 //		URI_MATCHER.addURI(AUTHORITY, "semesters", SEMESTERS);
 //		URI_MATCHER.addURI(AUTHORITY, "semesters/#", SEMESTER_ID);
 	}
+	
+	/** "where" clause template (for TextUtils.expandTemplate) for getting
+	 * tasks that overlap a certain date range */
+	private static final String TASK_DATES_WHERE = 
+			"(^1 between " + Task.Schema.START_INSTANT + " and " + 
+					Task.Schema.END_INSTANT + ") "
+			+ "or (" + Task.Schema.START_INSTANT + " between ^1 and ^2)"
+			+ " or (" + Task.Schema.END_INSTANT + " between ^1 and ^2)";
 	
 	@Override
 	public boolean onCreate() {
@@ -65,24 +87,40 @@ public class TaskProvider extends ContentProvider {
 			String[] selectionArgs, String sortOrder) {
 		SQLiteQueryBuilder builder = new SQLiteQueryBuilder();
 		int uriMatch = URI_MATCHER.match(uri);
-		// In the case of TASK_ID, SUBJECT_ID, or SEMESTER_ID, limit to
-		// returning the one result matching the requested ID.
-		switch (uriMatch) {
-			case TASK_ID: 
-//			case SUBJECT_ID: 
-//			case SEMESTER_ID:
-				builder.appendWhere(BaseColumns._ID + " = " + 
-						uri.getLastPathSegment());
+		
+		// Get the start and end date segments of the URI if applicable
+		if (uriMatch == TASK_DATES) {
+			List<String> segments = uri.getPathSegments();
+			if (segments.size() < 2) // shouldn't happen, but check anyway
+				throw new IllegalArgumentException("Unsupported URI: " + uri);
+			String start = segments.get(segments.size() - 2);
+			String end = segments.get(segments.size() - 1);
+			builder.appendWhereEscapeString(TextUtils.expandTemplate(
+					TASK_DATES_WHERE, start, end).toString());
+		}
+		
+		// In the case of most *_ID queries, limit to returning the one result 
+		// matching the requested ID.
+		if (uriMatch == TASK_ID) {
+//				|| uriMatch == SUBJECT_ID || uriMatch == SEMESTER_ID) {
+			builder.appendWhere(BaseColumns._ID + " = " + 
+					uri.getLastPathSegment());
 		}
 		
 		// Choose the correct table (and the sort order if relevant)
 		switch (uriMatch) {
 			case TASKS:
+			case TASK_DATES:
 				if (TextUtils.isEmpty(sortOrder))
 					sortOrder = Task.Schema.SORT_ORDER_DEFAULT;
 				// falling through
 			case TASK_ID:
 				builder.setTables(Task.Schema.TABLE);
+				break;
+			case TASK_WORK_INTERVALS_TASK_ID:
+				if (TextUtils.isEmpty(sortOrder))
+					sortOrder = TaskWorkInterval.Schema.SORT_ORDER_DEFAULT;
+				builder.setTables(TaskWorkInterval.Schema.TABLE);
 				break;
 //			case SUBJECTS:
 //				if (TextUtils.isEmpty(sortOrder))
@@ -98,6 +136,7 @@ public class TaskProvider extends ContentProvider {
 //			case SEMESTER_ID:
 //				builder.setTables(Semester.Schema.TABLE);
 //				break;
+			// TASK_WORK_INTERVALS and TASK_WORK_INTERVAL_ID can't be queried
 			default:
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
 		}
@@ -116,6 +155,12 @@ public class TaskProvider extends ContentProvider {
 		switch (URI_MATCHER.match(uri)) {
 			case TASKS:			return Task.Schema.CONTENT_TYPE;
 			case TASK_ID:		return Task.Schema.CONTENT_ITEM_TYPE;
+			case TASK_WORK_INTERVALS: 
+				return TaskWorkInterval.Schema.CONTENT_TYPE;
+			case TASK_WORK_INTERVAL_ID: 
+				return TaskWorkInterval.Schema.CONTENT_ITEM_TYPE;
+			case TASK_WORK_INTERVALS_TASK_ID: 
+				return TaskWorkInterval.Schema.CONTENT_TYPE;
 //			case SUBJECTS:		return Subject.Schema.CONTENT_TYPE;
 //			case SUBJECT_ID:	return Subject.Schema.CONTENT_ITEM_TYPE;
 //			case SEMESTERS:		return Semester.Schema.CONTENT_TYPE;
@@ -130,6 +175,8 @@ public class TaskProvider extends ContentProvider {
 		String table = null;
 		switch (URI_MATCHER.match(uri)) {
 			case TASKS: 	table = Task.Schema.TABLE; break;
+			case TASK_WORK_INTERVALS: 
+				table = TaskWorkInterval.Schema.TABLE; break;
 //			case SUBJECTS: 	table = Subject.Schema.TABLE; break;
 //			case SEMESTERS: table = Semester.Schema.TABLE; break;
 			default:
@@ -155,6 +202,7 @@ public class TaskProvider extends ContentProvider {
 		// Add the "where _id = (id)" clause for single deletions
 		switch (URI_MATCHER.match(uri)) {
 			case TASK_ID:
+			case TASK_WORK_INTERVAL_ID:
 //			case SUBJECT_ID:
 //			case SEMESTER_ID:
 				String idEq = BaseColumns._ID + " = " + uri.getLastPathSegment();
@@ -162,24 +210,32 @@ public class TaskProvider extends ContentProvider {
 					whereClause = idEq;
 				else
 					whereClause = idEq + " AND " + whereClause;
+				break;
+			case TASK_WORK_INTERVALS_TASK_ID:
+				String taskIdEq = TaskWorkInterval.Schema.TASK_ID + " = " + 
+						uri.getLastPathSegment();
+				if (TextUtils.isEmpty(whereClause))
+					whereClause = taskIdEq;
+				else
+					whereClause = taskIdEq + " AND " + whereClause;
+				break;
 		}
 		
 		// Figure out what table to delete from
 		String table = null;
 		switch (URI_MATCHER.match(uri)) {
 			case TASK_ID:
-				// falling through
 			case TASKS:
-				table = Task.Schema.TABLE;
-				break;
+				table = Task.Schema.TABLE; break;
+			case TASK_WORK_INTERVAL_ID:
+			case TASK_WORK_INTERVALS_TASK_ID:
+				table = TaskWorkInterval.Schema.TABLE; break;
 //			case SUBJECT_ID:
 //				// falling through
 //			case SUBJECTS:
-//				table = Subject.Schema.TABLE;
-//				break;
+//				table = Subject.Schema.TABLE; break;
 //			case SEMESTERS:
-//				table = Semester.Schema.TABLE;
-//				break;
+//				table = Semester.Schema.TABLE; break;
 			//TODO should there be anything that's unsupported for updating?
 			default:
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
@@ -198,6 +254,7 @@ public class TaskProvider extends ContentProvider {
 		// Add the "where _id = (id)" clause for single selections
 		switch (URI_MATCHER.match(uri)) {
 			case TASK_ID:
+			case TASK_WORK_INTERVAL_ID:
 //			case SUBJECT_ID:
 //			case SEMESTER_ID:
 				String idEq = BaseColumns._ID + " = " + uri.getLastPathSegment();
@@ -205,18 +262,28 @@ public class TaskProvider extends ContentProvider {
 					whereClause = idEq;
 				else
 					whereClause = idEq + " AND " + whereClause;
+				break;
+			case TASK_WORK_INTERVALS_TASK_ID:
+				String taskIdEq = TaskWorkInterval.Schema.TASK_ID + " = " + 
+						uri.getLastPathSegment();
+				if (TextUtils.isEmpty(whereClause))
+					whereClause = taskIdEq;
+				else
+					whereClause = taskIdEq + " AND " + whereClause;
+				break;
 		}
 		
 		// Figure out what table to update
 		String table = null;
 		switch (URI_MATCHER.match(uri)) {
 			case TASK_ID:
-				// falling through
 			case TASKS:
 				table = Task.Schema.TABLE;
 				break;
+			case TASK_WORK_INTERVAL_ID:
+			case TASK_WORK_INTERVALS_TASK_ID:
+				table = TaskWorkInterval.Schema.TABLE; break;
 //			case SUBJECT_ID:
-//				// falling through
 //			case SUBJECTS:
 //				table = Subject.Schema.TABLE;
 //				break;

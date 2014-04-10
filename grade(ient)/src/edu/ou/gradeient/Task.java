@@ -15,6 +15,7 @@ import android.provider.BaseColumns;
 
 /**
  * Represents a Task.
+ * TODO ADD EVERYTHING ABOUT WORK TIMES. EEEEEEEVERYTHIIIIIIIIIIIIIING.
  * TODO work time support, correct time zone support,
  * check if it's efficient enough
  */
@@ -22,7 +23,16 @@ public class Task implements Serializable
 {
 	/** Schema for the Task table in the database and ContentProvider */
 	public static final class Schema implements BaseColumns {
-		/** URI for the Task table */
+		/** 
+		 * URI for the Task table. Valid query URIs: <ul>
+		 * <li><code>CONTENT_URI</code>: returns all tasks (valid for query
+		 * and insert)
+		 * <li><code>CONTENT_URI/#</code>: returns task with ID #
+		 * (valid for query, update, delete)
+		 * <li><code>CONTENT_URI/#/##</code>: returns tasks that overlap
+		 * interval # to ## (with numbers in milliseconds since epoch)
+		 * (valid for query)
+		 */
 		public static final Uri CONTENT_URI = Uri.withAppendedPath(
 				TaskProvider.CONTENT_URI, "tasks");
 		/** MIME type for list of Tasks */
@@ -33,7 +43,7 @@ public class Task implements Serializable
 		public static final String CONTENT_ITEM_TYPE = 
 				ContentResolver.CURSOR_ITEM_BASE_TYPE + 
 				"/vnd." + TaskProvider.AUTHORITY + "_tasks";
-
+		
 		/* default */ static final String TABLE = "Task";
 		public static final String SUBJECT_NAME = "subject_name";
 		public static final String NAME = "name";
@@ -57,21 +67,22 @@ public class Task implements Serializable
 		public static final int COL_NAME = 2;
 		/** Is done (int 0/1 not null) */
 		public static final int COL_IS_DONE = 3;
-		/** Start instant (long >= 0 not null) */
+		/** Start instant in millis since epoch (long >= 0 not null) */
 		public static final int COL_START_INSTANT = 4;
-		/** End instant (long >= 0 not null) */
+		/** End instant in millis since epoch (long >= 0 not null) */
 		public static final int COL_END_INSTANT = 5;
 		/** Notes (string) */
 		public static final int COL_NOTES = 6;
 		
-		/** Selection/where clause for selecting tasks whose start/end interval
-		 * includes a certain instant in milliseconds (requires 1 argument) */
-		public static final String SELECT_BETWEEN_START_END = "? between " 
-				+ START_INSTANT + " and " + END_INSTANT;
-		public static final String SELECT_IN_RANGE = 
-				"(? between " + START_INSTANT + " and " + END_INSTANT + ") "
-				+ "or (" + START_INSTANT + " between ? and ?)"
-				+ " or (" + END_INSTANT + " between ? and ?)";
+		/** Gets a URI for the given task ID */
+		public static Uri getUriForTask(long taskId) {
+			return Uri.withAppendedPath(CONTENT_URI, "/" + taskId);
+		}
+
+		/** Get a URI for the given date range (in milliseconds since epoch) */
+		public static Uri getUriForRange(long start, long end) {
+			return Uri.withAppendedPath(CONTENT_URI, start + "/" + end);
+		}
 	}
 	
 	private static final long serialVersionUID = -2567385792745859337L;
@@ -223,7 +234,7 @@ public class Task implements Serializable
 	}
 	
 	/**
-	 * Gets the start time/date of this task in milliseconds since the 
+	 * Gets the end time/date of this task in milliseconds since the 
 	 * Unix epoch.
 	 */
 	public long getEndMillis() {
@@ -299,22 +310,10 @@ public class Task implements Serializable
 	}
 	
 	/**
-	 * Sets the start date/time for the task.
-	 * @param start The new start date/time.
-	 * @param maintainDuration If this is true, the end date/time will be
-	 * shifted to maintain the task's previous duration. If this is false and
-	 * start is after end, end will be updated to be the same as start.
-	 * @throws IllegalArgumentException if start is < 0
+	 * Sets the start date/time for the task. 
 	 */
 	public void setStart (long start, boolean maintainDuration) {
-		if (maintainDuration) {
-			setStartAndEnd(start, start + taskInterval.toDurationMillis());
-		} else {
-			if (taskInterval.isBefore(start))
-				setStartAndEnd(start, start);
-			else
-				taskInterval.setStartMillis(start);
-		}
+		FunTimes.setStart(taskInterval, start, maintainDuration);
 	}
 	
 	/**
@@ -328,8 +327,7 @@ public class Task implements Serializable
 	 * @throws IllegalArgumentException if minute or hour is invalid
 	 */
 	public void setStartTime(int hour, int minute, boolean maintainDuration) {
-		setStart(taskInterval.getStart().withTime(hour, minute, 0, 0)
-				.getMillis(), maintainDuration);
+		FunTimes.setStartTime(taskInterval, hour, minute, maintainDuration);
 	}
 	
 	/**
@@ -345,11 +343,7 @@ public class Task implements Serializable
 	 */
 	public void setStartDate(int year, int month, int day,
 			boolean maintainDuration) {
-		if (year < 1970 || year > 2036)
-			throw new IllegalArgumentException("year must be 1970-2036");
-		
-		setStart(taskInterval.getStart().withDate(year, month, day)
-				.getMillis(), maintainDuration);
+		FunTimes.setStartDate(taskInterval, year, month, day, maintainDuration);
 	}
 	
 	/** 
@@ -359,10 +353,7 @@ public class Task implements Serializable
 	 * @throws IllegalArgumentException if end < 0
 	 */
 	public void setEnd (long end) {
-		if (taskInterval.isAfter(end))
-			setStartAndEnd(end, end);
-		else
-			taskInterval.setEndMillis(end);
+		FunTimes.setEnd(taskInterval, end);
 	}
 	
 	/**
@@ -377,12 +368,7 @@ public class Task implements Serializable
 	 */
 	public void setEndTime(int hour, int minute, 
 			boolean incDayIfEndBeforeStart) {
-		long end = taskInterval.getEnd().withTime(hour, minute, 0, 0)
-				.getMillis();
-		if (incDayIfEndBeforeStart && taskInterval.isAfter(end))
-			setStartAndEnd(end, end);
-		else
-			setEnd(end);
+		FunTimes.setEndTime(taskInterval, hour, minute, incDayIfEndBeforeStart);
 	}
 	
 	/**
@@ -394,10 +380,7 @@ public class Task implements Serializable
 	 * @throws IllegalArgumentException if day, month, or year is invalid
 	 */
 	public void setEndDate(int year, int month, int day) {
-		if (year < 1970 || year > 2036)
-			throw new IllegalArgumentException("year must be 1970-2036");
-
-		setEnd(taskInterval.getEnd().withDate(year, month, day).getMillis());
+		FunTimes.setEndDate(taskInterval, year, month, day);
 	}
 	
 	/**
@@ -407,17 +390,7 @@ public class Task implements Serializable
 	 * @throws IllegalArgumentException if start > end
 	 */
 	public void setStartAndEnd(long start, long end) {
-		if (start > end)
-			throw new IllegalArgumentException("start must be before end");
-		
-		// Set start and end in an order that won't throw...
-		if (taskInterval.contains(start) || taskInterval.isAfter(start)) {
-			taskInterval.setStartMillis(start);
-			taskInterval.setEndMillis(end);
-		} else {
-			taskInterval.setEndMillis(end);
-			taskInterval.setStartMillis(start);
-		}
+		FunTimes.setStartAndEnd(taskInterval, start, end);
 	}
 	
 	/**
@@ -433,7 +406,7 @@ public class Task implements Serializable
 		}
 		
 		// Shift the start and end
-		shiftTimeOfInterval(shiftBy, taskInterval);
+		FunTimes.shiftTimeOfInterval(taskInterval, shiftBy);
 	}
 	
 	/**
@@ -461,18 +434,5 @@ public class Task implements Serializable
 		cv.put(Schema.END_INSTANT, taskInterval.getEndMillis());
 		cv.put(Schema.NOTES, notes);
 		return cv;
-	}
-	
-	/**
-	 * Shifts the interval by the amount of time specified. 
-	 * @param shiftBy The amount of time by which to shift, in milliseconds. 
-	 * A positive time shifts the interval to a later time than the original. 
-	 * @param interval The interval to be shifted
-	 */
-	private static void shiftTimeOfInterval (long shiftBy, 
-			MutableInterval interval)
-	{
-		interval.setStartMillis(interval.getStartMillis() + shiftBy);
-		interval.setEndMillis(interval.getEndMillis() + shiftBy);
 	}
 }

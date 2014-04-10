@@ -1,0 +1,42 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".CalendarActivity"
+        android:id="@+id/calendar_frame" >
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" >
+
+            <edu.ou.gradeient.CalendarTaskView
+                android:id="@+id/calendar_task_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" >
+            </edu.ou.gradeient.CalendarTaskView>
+
+            <edu.ou.gradeient.CalendarTaskLayout
+                android:id="@+id/task_layout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="fill"
+                android:orientation="horizontal"
+                android:paddingLeft="50sp" >
+            </edu.ou.gradeient.CalendarTaskLayout>
+        </FrameLayout>
+    </ScrollView>
+
+    <RelativeLayout
+        android:id="@+id/task_titles"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingLeft="50sp" >
+    </RelativeLayout>
+
+</FrameLayout>
