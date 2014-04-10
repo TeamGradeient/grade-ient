@@ -1,6 +1,5 @@
 package edu.ou.gradeient;
 
-//import edu.ou.gradeient.R.id;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.widget.RelativeLayout;

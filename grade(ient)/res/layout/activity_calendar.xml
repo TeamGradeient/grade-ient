@@ -1,18 +1,42 @@
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".CalendarActivity" >
+    android:layout_height="match_parent" >
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical" >
+        android:layout_height="match_parent"
+        tools:context=".CalendarActivity"
+        android:id="@+id/calendar_frame" >
 
-        <edu.ou.gradeient.CalendarTaskView
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
-        </edu.ou.gradeient.CalendarTaskView>
-    </LinearLayout>
+            android:layout_height="wrap_content"
+            android:orientation="vertical" >
 
-</ScrollView>
+            <edu.ou.gradeient.CalendarTaskView
+                android:id="@+id/calendar_task_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" >
+            </edu.ou.gradeient.CalendarTaskView>
+
+            <edu.ou.gradeient.CalendarTaskLayout
+                android:id="@+id/task_layout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="fill"
+                android:orientation="horizontal"
+                android:paddingLeft="50sp" >
+            </edu.ou.gradeient.CalendarTaskLayout>
+        </FrameLayout>
+    </ScrollView>
+
+    <RelativeLayout
+        android:id="@+id/task_titles"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:paddingLeft="50sp" >
+    </RelativeLayout>
+
+</FrameLayout>
