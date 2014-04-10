@@ -19,5 +19,6 @@
     <string name="hint_task_notes">Notes</string>
     <string name="action_accept_add_task">Confirm changes</string>
     <string name="action_cancel_add_task">Cancel changes</string>
+    <string name="action_calendar_go_to_now">Go to now</string>
 
 </resources>
