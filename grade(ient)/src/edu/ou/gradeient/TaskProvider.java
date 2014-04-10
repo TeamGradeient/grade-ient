@@ -41,10 +41,13 @@ public class TaskProvider extends ContentProvider {
 	private static final int TASKS = 1;
 	private static final int TASK_ID = 2;
 	private static final int TASK_DATES = 3;
-//	private static final int SUBJECTS = 4;
-//	private static final int SUBJECT_ID = 5;
-//	private static final int SEMESTERS = 6;
-//	private static final int SEMESTER_ID = 7;
+	private static final int TASK_WORK_INTERVALS = 4;
+	private static final int TASK_WORK_INTERVAL_ID = 5;
+	private static final int TASK_WORK_INTERVALS_TASK_ID = 6;
+//	private static final int SUBJECTS = 10;
+//	private static final int SUBJECT_ID = 11;
+//	private static final int SEMESTERS = 20;
+//	private static final int SEMESTER_ID = 21;
 	private static final UriMatcher URI_MATCHER;
 	// prepare the UriMatcher
 	static {
@@ -52,6 +55,9 @@ public class TaskProvider extends ContentProvider {
 		URI_MATCHER.addURI(AUTHORITY, "tasks", TASKS);
 		URI_MATCHER.addURI(AUTHORITY, "tasks/#", TASK_ID);
 		URI_MATCHER.addURI(AUTHORITY, "tasks/#/#", TASK_DATES);
+		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals", TASK_WORK_INTERVALS);
+		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals/#", TASK_WORK_INTERVAL_ID);
+		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals/task/#", TASK_WORK_INTERVALS_TASK_ID);
 //		URI_MATCHER.addURI(AUTHORITY, "subjects", SUBJECTS);
 //		URI_MATCHER.addURI(AUTHORITY, "subjects/#", SUBJECT_ID);
 //		URI_MATCHER.addURI(AUTHORITY, "semesters", SEMESTERS);
@@ -93,14 +99,12 @@ public class TaskProvider extends ContentProvider {
 					TASK_DATES_WHERE, start, end).toString());
 		}
 		
-		// In the case of TASK_ID, SUBJECT_ID, or SEMESTER_ID, limit to
-		// returning the one result matching the requested ID.
-		switch (uriMatch) {
-			case TASK_ID: 
-//			case SUBJECT_ID: 
-//			case SEMESTER_ID:
-				builder.appendWhere(BaseColumns._ID + " = " + 
-						uri.getLastPathSegment());
+		// In the case of most *_ID queries, limit to returning the one result 
+		// matching the requested ID.
+		if (uriMatch == TASK_ID) {
+//				|| uriMatch == SUBJECT_ID || uriMatch == SEMESTER_ID) {
+			builder.appendWhere(BaseColumns._ID + " = " + 
+					uri.getLastPathSegment());
 		}
 		
 		// Choose the correct table (and the sort order if relevant)
@@ -112,6 +116,11 @@ public class TaskProvider extends ContentProvider {
 				// falling through
 			case TASK_ID:
 				builder.setTables(Task.Schema.TABLE);
+				break;
+			case TASK_WORK_INTERVALS_TASK_ID:
+				if (TextUtils.isEmpty(sortOrder))
+					sortOrder = TaskWorkInterval.Schema.SORT_ORDER_DEFAULT;
+				builder.setTables(TaskWorkInterval.Schema.TABLE);
 				break;
 //			case SUBJECTS:
 //				if (TextUtils.isEmpty(sortOrder))
@@ -127,6 +136,7 @@ public class TaskProvider extends ContentProvider {
 //			case SEMESTER_ID:
 //				builder.setTables(Semester.Schema.TABLE);
 //				break;
+			// TASK_WORK_INTERVALS and TASK_WORK_INTERVAL_ID can't be queried
 			default:
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
 		}
@@ -145,6 +155,12 @@ public class TaskProvider extends ContentProvider {
 		switch (URI_MATCHER.match(uri)) {
 			case TASKS:			return Task.Schema.CONTENT_TYPE;
 			case TASK_ID:		return Task.Schema.CONTENT_ITEM_TYPE;
+			case TASK_WORK_INTERVALS: 
+				return TaskWorkInterval.Schema.CONTENT_TYPE;
+			case TASK_WORK_INTERVAL_ID: 
+				return TaskWorkInterval.Schema.CONTENT_ITEM_TYPE;
+			case TASK_WORK_INTERVALS_TASK_ID: 
+				return TaskWorkInterval.Schema.CONTENT_TYPE;
 //			case SUBJECTS:		return Subject.Schema.CONTENT_TYPE;
 //			case SUBJECT_ID:	return Subject.Schema.CONTENT_ITEM_TYPE;
 //			case SEMESTERS:		return Semester.Schema.CONTENT_TYPE;
@@ -159,6 +175,8 @@ public class TaskProvider extends ContentProvider {
 		String table = null;
 		switch (URI_MATCHER.match(uri)) {
 			case TASKS: 	table = Task.Schema.TABLE; break;
+			case TASK_WORK_INTERVALS: 
+				table = TaskWorkInterval.Schema.TABLE; break;
 //			case SUBJECTS: 	table = Subject.Schema.TABLE; break;
 //			case SEMESTERS: table = Semester.Schema.TABLE; break;
 			default:
@@ -184,6 +202,7 @@ public class TaskProvider extends ContentProvider {
 		// Add the "where _id = (id)" clause for single deletions
 		switch (URI_MATCHER.match(uri)) {
 			case TASK_ID:
+			case TASK_WORK_INTERVAL_ID:
 //			case SUBJECT_ID:
 //			case SEMESTER_ID:
 				String idEq = BaseColumns._ID + " = " + uri.getLastPathSegment();
@@ -191,24 +210,32 @@ public class TaskProvider extends ContentProvider {
 					whereClause = idEq;
 				else
 					whereClause = idEq + " AND " + whereClause;
+				break;
+			case TASK_WORK_INTERVALS_TASK_ID:
+				String taskIdEq = TaskWorkInterval.Schema.TASK_ID + " = " + 
+						uri.getLastPathSegment();
+				if (TextUtils.isEmpty(whereClause))
+					whereClause = taskIdEq;
+				else
+					whereClause = taskIdEq + " AND " + whereClause;
+				break;
 		}
 		
 		// Figure out what table to delete from
 		String table = null;
 		switch (URI_MATCHER.match(uri)) {
 			case TASK_ID:
-				// falling through
 			case TASKS:
-				table = Task.Schema.TABLE;
-				break;
+				table = Task.Schema.TABLE; break;
+			case TASK_WORK_INTERVAL_ID:
+			case TASK_WORK_INTERVALS_TASK_ID:
+				table = TaskWorkInterval.Schema.TABLE; break;
 //			case SUBJECT_ID:
 //				// falling through
 //			case SUBJECTS:
-//				table = Subject.Schema.TABLE;
-//				break;
+//				table = Subject.Schema.TABLE; break;
 //			case SEMESTERS:
-//				table = Semester.Schema.TABLE;
-//				break;
+//				table = Semester.Schema.TABLE; break;
 			//TODO should there be anything that's unsupported for updating?
 			default:
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
@@ -227,6 +254,7 @@ public class TaskProvider extends ContentProvider {
 		// Add the "where _id = (id)" clause for single selections
 		switch (URI_MATCHER.match(uri)) {
 			case TASK_ID:
+			case TASK_WORK_INTERVAL_ID:
 //			case SUBJECT_ID:
 //			case SEMESTER_ID:
 				String idEq = BaseColumns._ID + " = " + uri.getLastPathSegment();
@@ -234,18 +262,28 @@ public class TaskProvider extends ContentProvider {
 					whereClause = idEq;
 				else
 					whereClause = idEq + " AND " + whereClause;
+				break;
+			case TASK_WORK_INTERVALS_TASK_ID:
+				String taskIdEq = TaskWorkInterval.Schema.TASK_ID + " = " + 
+						uri.getLastPathSegment();
+				if (TextUtils.isEmpty(whereClause))
+					whereClause = taskIdEq;
+				else
+					whereClause = taskIdEq + " AND " + whereClause;
+				break;
 		}
 		
 		// Figure out what table to update
 		String table = null;
 		switch (URI_MATCHER.match(uri)) {
 			case TASK_ID:
-				// falling through
 			case TASKS:
 				table = Task.Schema.TABLE;
 				break;
+			case TASK_WORK_INTERVAL_ID:
+			case TASK_WORK_INTERVALS_TASK_ID:
+				table = TaskWorkInterval.Schema.TABLE; break;
 //			case SUBJECT_ID:
-//				// falling through
 //			case SUBJECTS:
 //				table = Subject.Schema.TABLE;
 //				break;

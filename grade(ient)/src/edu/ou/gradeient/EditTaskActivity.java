@@ -10,7 +10,6 @@ import android.app.TimePickerDialog.OnTimeSetListener;
 import android.content.ContentUris;
 import android.content.Intent;
 import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
 import android.text.format.DateFormat;
 import android.text.format.DateUtils;

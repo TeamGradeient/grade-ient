@@ -11,10 +11,13 @@ CREATE TABLE Task (
 );----
 
 CREATE TABLE Task_Work_Interval (
+  _id INTEGER PRIMARY KEY AUTOINCREMENT, -- for use with ListView
   task_id INTEGER NOT NULL,
   -- In milliseconds since Unix epoch
   start_instant INTEGER NOT NULL CHECK (start_instant >= 0),
   end_instant INTEGER NOT NULL CHECK (end_instant >= 0),
+  -- Certainty: 0 = maybe, 1 = definitely
+  certainty INTEGER NOT NULL DEFAULT 1 CHECK (priority IN (0, 1)),
   PRIMARY KEY (task_id, start_instant, end_instant),
   -- Deleting a task should delete all work intervals.
   FOREIGN KEY (task_id) REFERENCES Task (_id) ON DELETE CASCADE,
