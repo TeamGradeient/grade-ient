@@ -2,29 +2,54 @@ package edu.ou.gradeient;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.TreeSet;
 
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.text.format.DateFormat;
 import android.text.format.DateUtils;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.TypedValue;
-import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AbsoluteLayout;
 import android.widget.AbsoluteLayout.LayoutParams;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+/*
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * There is a TreeSet of Tasks called "tasks" as a member.
+ * TreeSet means the tasks stay sorted.
+ * Get the tasks ending after a certain time by:
+ * 		tasks.tailSet(new Task(..., end time in millis, ...))
+ * The tasks have their work times pulled too in the init method.
+ * The set will get updated whenever the activity gets created/destroyed
+ *   (which I think is pretty frequent).
+ * If you want them updated on data change, you might be able to add some
+ * sort of notification/event listening thing, or an update method 
+ * CalendarActivity can call (CalendarTaskView's tasks would have to be
+ * static then too).
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ */
+
 public class CalendarTaskView extends View {
+	private static final String TAG = "CalendarTaskView";
 	
 	/**Minimum height of a day*/
 	public final static int DAY_HEIGHT = 200;
@@ -64,6 +89,9 @@ public class CalendarTaskView extends View {
 	long timeInterval;
 	long timeSinceStart;
 
+	// TEMPORARY
+	private TreeSet<Task> tasks = new TreeSet<Task>();
+
 	public CalendarTaskView(Context context) {
 		super(context);
 		init();
@@ -91,6 +119,50 @@ public class CalendarTaskView extends View {
 		absoluteWidth = displaymetrics.widthPixels;
 		setVisibleHeight();
 		usableWidth = (int) (absoluteWidth - DISTANCE_FROM_EDGE);
+		
+		// wait for tasks to show up
+		try { // yaaaay catching everything
+			int waitTime = 0;
+			while (CalendarActivity.tasks == null && waitTime < 1000) {
+				try {
+					Thread.sleep(50);
+					waitTime += 50;
+				} catch (InterruptedException e) {
+				}
+			}
+			if (waitTime == 1000)
+				return;
+			CalendarActivity.tasks.moveToFirst();
+			// get all tasks, temporarily indexed by ID
+			HashMap<Long, Task> taskMap = new HashMap<Long, Task>();
+			while (CalendarActivity.tasks != null &&
+					CalendarActivity.tasks.moveToNext()) {
+				try {
+					Task t = new Task(CalendarActivity.tasks);
+					taskMap.put(t.getId(), t);
+				} catch (Exception ex) {
+					Log.w(TAG, "While getting tasks: " + ex);
+				}
+			}
+			// match up work times with tasks
+			if (CalendarActivity.workTimes != null)
+				CalendarActivity.workTimes.moveToFirst();
+			while (CalendarActivity.workTimes != null && 
+					CalendarActivity.workTimes.moveToNext()) {
+				try {
+					TaskWorkInterval twi = 
+							new TaskWorkInterval(CalendarActivity.workTimes);
+					if (taskMap.containsKey(twi.getTaskId()))
+						taskMap.get(twi.getTaskId()).addWorkInterval(twi);
+				} catch (Exception ex) {
+					Log.w(TAG, "While getting work times: " + ex);
+				}
+			}
+			// add everything to the actual task map
+			tasks.addAll(taskMap.values());
+		} catch (Exception ex) {
+			Log.w(TAG, "While getting tasks: " + ex);
+		}
 	}
 	
 	private void drawTask(Canvas canvas, int numberOfTasks, 

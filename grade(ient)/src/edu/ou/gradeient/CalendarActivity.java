@@ -1,36 +1,28 @@
 package edu.ou.gradeient;
 
-import android.os.Bundle;
 import android.app.Activity;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
 import android.content.Loader;
 import android.database.Cursor;
-import android.graphics.Color;
+import android.os.Bundle;
+import android.support.v4.app.NavUtils;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
-import android.view.ViewGroup;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.ScrollView;
-import android.widget.SimpleCursorAdapter;
-import android.widget.TextView;
-import android.support.v4.app.NavUtils;
 
 public class CalendarActivity extends Activity
 	implements LoaderManager.LoaderCallbacks<Cursor> {
 
 	private static final String TAG = "CalendarTaskActivity";
-	private static final String[] COLUMNS = { Task.Schema._ID, 
-		Task.Schema.NAME, Task.Schema.END_INSTANT };
-	private static final int ADD_REQUEST = 1;
-	private static final int EDIT_REQUEST = 2;
-	private static final int LOADER_ID = 1;
+	private static final int TASK_LOADER = 1;
+	private static final int WORK_LOADER = 2;
 	/** Callbacks to interact with the LoaderManager */
 	private LoaderManager.LoaderCallbacks<Cursor> callbacks;
-	/** Adapter that binds the data to the View */
-	private SimpleCursorAdapter adapter;
+	
+	// TODO HORRIBLE HORRIBLE HACK DELETE THIS VERY SOON
+	public static Cursor tasks;
+	public static Cursor workTimes;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +47,10 @@ public class CalendarActivity extends Activity
 		//nv2.setBackgroundColor(Color.RED);
 		//ll.addView(nv2);
 		//ctv.populateLayoutWithTasks(ll);
+		
+		callbacks = this;
+		getLoaderManager().initLoader(TASK_LOADER, null, callbacks);
+		getLoaderManager().initLoader(WORK_LOADER, null, callbacks);
 	}
 
 	/**
@@ -98,10 +94,15 @@ public class CalendarActivity extends Activity
 	@Override
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
 		switch (id) {
-			case LOADER_ID:
-				// Create a new CursorLoader with the following query parameters.
+		//TODO THIS IS TEMPORARY
+			case TASK_LOADER:
+				// Query all the tasks
 				return new CursorLoader(this, Task.Schema.CONTENT_URI,
-						COLUMNS, null, null, null);
+						Task.Schema.COLUMNS, null, null, null);
+			case WORK_LOADER:
+				// Query all the work times
+				return new CursorLoader(this, TaskWorkInterval.Schema.CONTENT_URI,
+						TaskWorkInterval.Schema.COLUMNS, null, null, null);
 			default:
 				throw new IllegalArgumentException("Unknown id: " + id);
 		}
@@ -111,27 +112,26 @@ public class CalendarActivity extends Activity
 	public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 		int id = loader.getId();
 		switch (id) {
-			case LOADER_ID:
-				// The asynchronous load is complete and the data is now
-				// available for use. Only now can we associate the queried 
-				// Cursor with the SimpleCursorAdapter.
-				adapter.swapCursor(data);
+			case TASK_LOADER:
+				CalendarActivity.tasks = data;
+				break;
+			case WORK_LOADER:
+				CalendarActivity.workTimes = data;
 				break;
 			default:
 				throw new IllegalArgumentException("Unknown id: " + id);
 		}
-		// The listview now displays the queried data.
 	}
 	
 	@Override
 	public void onLoaderReset(Loader<Cursor> loader) {
 		int id = loader.getId();
 		switch (id) {
-			case LOADER_ID:
-				// For whatever reason, the Loader's data is now unavailable.
-				// Remove any references to the old data by replacing it with
-				// a null Cursor.
-				adapter.swapCursor(null);
+			case TASK_LOADER:
+				CalendarActivity.tasks = null;
+				break;
+			case WORK_LOADER:
+				CalendarActivity.workTimes = null;
 				break;
 			default:
 				throw new IllegalArgumentException("Unknown id: " + id);
