@@ -58,9 +58,9 @@
             android:id="@+id/home_goto_calendar_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="9sp"
             android:clickable="true"
-            android:onClick="startCalendarActivity">
+            android:onClick="startCalendarActivity"
+            android:padding="9sp" >
 
             <TextView
                 android:id="@+id/home_goto_calendar_button_label"
@@ -70,14 +70,13 @@
                 android:text="@string/home_goto_calendar_label"
                 android:textSize="25sp" >
             </TextView>
+
             <ImageView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:src="@drawable/ic_action_forward"
-                android:layout_below="@id/home_goto_calendar_button_label" >
-                
+                android:layout_below="@id/home_goto_calendar_button_label"
+                android:src="@drawable/ic_action_forward" >
             </ImageView>
-            
         </RelativeLayout>
     </LinearLayout>
 

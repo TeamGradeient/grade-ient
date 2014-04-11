@@ -1,6 +1,7 @@
 package edu.ou.gradeient;
 
 import android.os.Bundle;
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
@@ -18,6 +19,9 @@ public class HomeScreenActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home_screen);
+//		ActionBar actionBar = getActionBar();
+//		actionBar.setTitle(R.string.app_name);
+//		actionBar.setDisplayShowTitleEnabled(true);
 		
 		/*------------display time and date------------*/
 		//Date
