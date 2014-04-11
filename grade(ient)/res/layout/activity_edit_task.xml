@@ -39,10 +39,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dip"
-            android:capitalize="sentences"
+            android:capitalize="words"
             android:focusable="true"
             android:hint="@string/hint_subject_name"
-            android:inputType="textAutoCorrect|textCapSentences"
+            android:inputType="textAutoCorrect|textCapSentences|textCapWords"
             android:minHeight="48dip"
             android:singleLine="true" />
 
