@@ -44,6 +44,7 @@ public class TaskProvider extends ContentProvider {
 	private static final int TASK_WORK_INTERVALS = 4;
 	private static final int TASK_WORK_INTERVAL_ID = 5;
 	private static final int TASK_WORK_INTERVALS_TASK_ID = 6;
+	private static final int TASK_WORK_INTERVALS_DATES = 7;
 //	private static final int SUBJECTS = 10;
 //	private static final int SUBJECT_ID = 11;
 //	private static final int SEMESTERS = 20;
@@ -58,6 +59,7 @@ public class TaskProvider extends ContentProvider {
 		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals", TASK_WORK_INTERVALS);
 		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals/#", TASK_WORK_INTERVAL_ID);
 		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals/task/#", TASK_WORK_INTERVALS_TASK_ID);
+		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals/#/#", TASK_WORK_INTERVALS_DATES);
 //		URI_MATCHER.addURI(AUTHORITY, "subjects", SUBJECTS);
 //		URI_MATCHER.addURI(AUTHORITY, "subjects/#", SUBJECT_ID);
 //		URI_MATCHER.addURI(AUTHORITY, "semesters", SEMESTERS);
@@ -89,7 +91,7 @@ public class TaskProvider extends ContentProvider {
 		int uriMatch = URI_MATCHER.match(uri);
 		
 		// Get the start and end date segments of the URI if applicable
-		if (uriMatch == TASK_DATES) {
+		if (uriMatch == TASK_DATES || uriMatch == TASK_WORK_INTERVALS_DATES) {
 			List<String> segments = uri.getPathSegments();
 			if (segments.size() < 2) // shouldn't happen, but check anyway
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
@@ -117,6 +119,8 @@ public class TaskProvider extends ContentProvider {
 			case TASK_ID:
 				builder.setTables(Task.Schema.TABLE);
 				break;
+			case TASK_WORK_INTERVALS:
+			case TASK_WORK_INTERVALS_DATES:
 			case TASK_WORK_INTERVALS_TASK_ID:
 				if (TextUtils.isEmpty(sortOrder))
 					sortOrder = TaskWorkInterval.Schema.SORT_ORDER_DEFAULT;
@@ -153,19 +157,27 @@ public class TaskProvider extends ContentProvider {
 	@Override
 	public String getType(Uri uri) {
 		switch (URI_MATCHER.match(uri)) {
-			case TASKS:			return Task.Schema.CONTENT_TYPE;
-			case TASK_ID:		return Task.Schema.CONTENT_ITEM_TYPE;
+			case TASKS:
+			case TASK_DATES:
+				return Task.Schema.CONTENT_TYPE;
+			case TASK_ID:
+				return Task.Schema.CONTENT_ITEM_TYPE;
 			case TASK_WORK_INTERVALS: 
+			case TASK_WORK_INTERVALS_TASK_ID: 
+			case TASK_WORK_INTERVALS_DATES:
 				return TaskWorkInterval.Schema.CONTENT_TYPE;
 			case TASK_WORK_INTERVAL_ID: 
 				return TaskWorkInterval.Schema.CONTENT_ITEM_TYPE;
-			case TASK_WORK_INTERVALS_TASK_ID: 
-				return TaskWorkInterval.Schema.CONTENT_TYPE;
 //			case SUBJECTS:		return Subject.Schema.CONTENT_TYPE;
 //			case SUBJECT_ID:	return Subject.Schema.CONTENT_ITEM_TYPE;
 //			case SEMESTERS:		return Semester.Schema.CONTENT_TYPE;
 //			case SEMESTER_ID:	return Semester.Schema.CONTENT_ITEM_TYPE;
+			case -1:
+				throw new IllegalArgumentException("Unsupported URI: " + uri);
 			default:
+				Log.wtf(TAG, "Known URI did not match content type: match "
+						+ "value was " + URI_MATCHER.match(uri) + ", URI was"
+						+ uri.toString());
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
 		}
 	}
