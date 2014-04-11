@@ -19,6 +19,12 @@
     <string name="hint_task_notes">Notes</string>
     <string name="action_accept_add_task">Confirm changes</string>
     <string name="action_cancel_add_task">Cancel changes</string>
+    
     <string name="action_calendar_go_to_now">Go to now</string>
-
+    <string name="title_activity_home_screen">grade(ient)</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="home_goto_calendar_label">Go to calendar view</string>
+	<string name="action_task_list">Task list</string>
+	<string name="next_work_times">Next work times</string>
+	<string name="next_tasks_due">Next tasks due</string>
 </resources>

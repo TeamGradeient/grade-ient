@@ -1,13 +1,17 @@
 package edu.ou.gradeient;
 
 import java.io.Serializable;
-import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.TreeSet;
 
 import org.joda.time.DateTime;
 import org.joda.time.MutableInterval;
 import org.joda.time.ReadableInterval;
 
 import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
@@ -19,7 +23,7 @@ import android.provider.BaseColumns;
  * TODO work time support, correct time zone support,
  * check if it's efficient enough
  */
-public class Task implements Serializable
+public class Task implements Comparable<Task>, Serializable
 {
 	/** Schema for the Task table in the database and ContentProvider */
 	public static final class Schema implements BaseColumns {
@@ -55,8 +59,6 @@ public class Task implements Serializable
 		public static final String[] COLUMNS = { _ID, SUBJECT_NAME, NAME,
 			IS_DONE, START_INSTANT, END_INSTANT, NOTES };
 		
-		//TODO subject object? work times?
-		
 		public static final String SORT_ORDER_DEFAULT = END_INSTANT + " ASC";
 		
 		/** ID (long not null) */
@@ -76,7 +78,7 @@ public class Task implements Serializable
 		
 		/** Gets a URI for the given task ID */
 		public static Uri getUriForTask(long taskId) {
-			return Uri.withAppendedPath(CONTENT_URI, "/" + taskId);
+			return ContentUris.withAppendedId(CONTENT_URI, taskId);
 		}
 
 		/** Get a URI for the given date range (in milliseconds since epoch) */
@@ -91,7 +93,7 @@ public class Task implements Serializable
 	public static final long NEW_TASK_ID = -1;
 	
 	/** Unique ID of the task. */
-	private final long id;
+	private long id;
 	
 	/**A String containing the name of this task*/
 	private String name;
@@ -106,18 +108,12 @@ public class Task implements Serializable
 	private boolean isDone;
 	
 	/**The interval for the task*/
-	private final MutableInterval taskInterval;
+	private MutableInterval taskInterval;
 	
-	/**Comparator to compare two tasks by their due dates*/
-	public static final Comparator<Task> BY_DUE_DATE = new Comparator<Task>() {
-		@Override
-		public int compare(Task lhs, Task rhs) {
-			long ldue = lhs.getEndMillis();
-			long rdue = rhs.getEndMillis();
-			return ldue < rdue ? -1 : (ldue == rdue ? 0 : 1);
-		}
-	};
-
+	/** Work times for the task */
+	private TreeSet<TaskWorkInterval> workIntervals = 
+			new TreeSet<TaskWorkInterval>();
+	
 	/**
 	 * Creates a default task with the name given.
 	 * @param name The name of the task. Must not be null.
@@ -309,11 +305,65 @@ public class Task implements Serializable
 		this.notes = notes == null ? "" : notes;
 	}
 	
+	/** 
+	 * Gets an unmodifiable view of the task's work intervals 
+	 */
+	public Collection<TaskWorkInterval> getWorkIntervals() {
+		return Collections.unmodifiableSortedSet(workIntervals);
+	}
+	
+	/**
+	 * Sets the task's work intervals from the given cursor. The cursor
+	 * must be from the Task_Work_Interval table in the database and include
+	 * columns as defined by {@link TaskWorkInterval.Schema.COLUMNS}.
+	 * It should be at one position before the desired start position.
+	 * @param cursor The cursor to read the work intervals from
+	 * @param replace If true, clear the work intervals before adding the
+	 * ones from the cursor
+	 * @throws IllegalArgumentException if a value found in the database
+	 * was illegal, the cursor was null, the work interval's task ID did not
+	 * match this task's ID, or the work interval was outside the task interval.
+	 * @throws NumberFormatException if a value that was supposed to be a 
+	 * number was not actually a number
+	 */
+	public void setWorkIntervals(Cursor cursor, boolean replace) {
+		if (cursor == null)
+			throw new IllegalArgumentException("cursor must not be null");
+		if (replace)
+			workIntervals.clear();
+		while (cursor.moveToNext()) 
+			addWorkInterval(new TaskWorkInterval(cursor));
+	}
+	
+	/**
+	 * Adds a work interval to this task.
+	 * @param interval The interval to add
+	 * @throws IllegalArgumentException if the work interval's task ID did not
+	 * match this task's ID or the work interval was outside the task interval.
+	 */
+	public void addWorkInterval(TaskWorkInterval interval) {
+		if (interval.getTaskId() != id)
+			throw new IllegalArgumentException("Work interval found for "
+					+ "task with different ID");
+		if (!taskInterval.contains(interval.getInterval()))
+			throw new IllegalArgumentException("Work interval out of task "
+					+ "start/end interval");
+		workIntervals.add(interval);
+	}
+	
 	/**
 	 * Sets the start date/time for the task. 
+	 * @param start The new start date/time.
+	 * @param maintainDuration If this is true, the end date/time will be
+	 * shifted to maintain the task's previous duration, and work intervals
+	 * will be shifted. If this is false and start is after end, end will be 
+	 * updated to be the same as start (and all work times will be wiped out).
+	 * @throws IllegalArgumentException if start is < 0
 	 */
 	public void setStart (long start, boolean maintainDuration) {
+		long oldStart = getStartMillis();
 		FunTimes.setStart(taskInterval, start, maintainDuration);
+		fixWorkIntervalsStart(oldStart, maintainDuration);
 	}
 	
 	/**
@@ -321,13 +371,15 @@ public class Task implements Serializable
 	 * @param hour new hour of day, 0-23
 	 * @param minute new minute of hour, 0-59
 	 * @param maintainDuration If this is true, the end time will be shifted
-	 * to maintain the task's previous duration. If this is false and setting
-	 * start's time to hour and minute results in a time that is after end,
-	 * end will be updated to be the same as start.
+	 * to maintain the task's previous duration, and work intervals
+	 * will be shifted. If this is false and new start is after end, end will be 
+	 * updated to be the same as start (and all work times will be wiped out).
 	 * @throws IllegalArgumentException if minute or hour is invalid
 	 */
 	public void setStartTime(int hour, int minute, boolean maintainDuration) {
+		long oldStart = getStartMillis();
 		FunTimes.setStartTime(taskInterval, hour, minute, maintainDuration);
+		fixWorkIntervalsStart(oldStart, maintainDuration);
 	}
 	
 	/**
@@ -336,24 +388,28 @@ public class Task implements Serializable
 	 * @param month new month of year, 0-11
 	 * @param day new day of month, 1-31
 	 * @param maintainDuration If this is true, the end date will be shifted
-	 * to maintain the task's previous duration. If this is false and setting
-	 * start's date to the given values results in a date that is after end,
-	 * end will be updated to be the same as start.
+	 * to maintain the task's previous duration, and work intervals will be
+	 * shifted. If this is false and setting start's date to the given values 
+	 * results in a date that is after end, end will be updated to be the same 
+	 * as start (and all work times will be wiped out).
 	 * @throws IllegalArgumentException if day, month, or year is invalid
 	 */
 	public void setStartDate(int year, int month, int day,
 			boolean maintainDuration) {
+		long oldStart = getStartMillis();
 		FunTimes.setStartDate(taskInterval, year, month, day, maintainDuration);
+		fixWorkIntervalsStart(oldStart, maintainDuration);
 	}
 	
 	/** 
 	 * Set the new end time/date for the task.
 	 * @param end The new end time/date. If it is before start, start will be 
-	 * updated to be the same as end.
+	 * updated to be the same as end (and all work intervals will be deleted).
 	 * @throws IllegalArgumentException if end < 0
 	 */
 	public void setEnd (long end) {
 		FunTimes.setEnd(taskInterval, end);
+		fixWorkIntervals();
 	}
 	
 	/**
@@ -363,12 +419,13 @@ public class Task implements Serializable
 	 * @param incDayIfEndBeforeStart If this is true and the resulting end time
 	 * is before start, increment the new end time's day. If this is false and
 	 * the resulting end time is before start, start will be updated to be the
-	 * same as end.
+	 * same as end (and all work intervals will be deleted).
 	 * @throws IllegalArgumentException if hour or minute is invalid
 	 */
 	public void setEndTime(int hour, int minute, 
 			boolean incDayIfEndBeforeStart) {
 		FunTimes.setEndTime(taskInterval, hour, minute, incDayIfEndBeforeStart);
+		fixWorkIntervals(); //TODO anything else for this one?
 	}
 	
 	/**
@@ -381,6 +438,7 @@ public class Task implements Serializable
 	 */
 	public void setEndDate(int year, int month, int day) {
 		FunTimes.setEndDate(taskInterval, year, month, day);
+		fixWorkIntervals();
 	}
 	
 	/**
@@ -397,18 +455,65 @@ public class Task implements Serializable
 	 * Shifts all the times of the task.
 	 * @param shiftBy The time by which to shift, in milliseconds.
 	 */
-	public void shiftTimes (long shiftBy)
-	{
+	public void shiftTimes (long shiftBy) {
 		//If shiftBy is 0, returns without doing anything
 		if (shiftBy == 0)
-		{
 			return;
-		}
 		
 		// Shift the start and end
 		FunTimes.shiftTimeOfInterval(taskInterval, shiftBy);
+		// Shift the work times
+		for (TaskWorkInterval interval : workIntervals)
+			interval.shiftTime(shiftBy);
 	}
 	
+	/**
+	 * If maintainDuration is true, shifts all work intervals.
+	 * If false, calls fixWorkIntervals.
+	 */
+	private void fixWorkIntervalsStart(long oldStart, boolean maintainDuration) {
+		if (maintainDuration) {
+			shiftTimes(getStartMillis() - oldStart);
+		} else {
+			fixWorkIntervals();
+		}
+	}
+	
+	/**
+	 * Ensures the work intervals are valid for the task interval.
+	 * If the task duration is 0, deletes all work intervals.
+	 * Deletes any work intervals that are entirely outside the task interval.
+	 * Updates the start/end of intervals overlapping the task start/end.
+	 */
+	private void fixWorkIntervals() {
+		if (taskInterval.toDurationMillis() == 0) {
+			workIntervals.clear();
+			return;
+		}
+		ArrayList<TaskWorkInterval> toRemove = new ArrayList<TaskWorkInterval>();
+		for (TaskWorkInterval twi : workIntervals) {
+			ReadableInterval interval = twi.getInterval();
+			// only do anything if the task interval does not fully 
+			// contain this interval
+			if (!taskInterval.contains(interval)) {
+				// if it overlaps at all, update the start or end
+				if (taskInterval.overlaps(interval)) {
+					if (taskInterval.contains(interval.getStartMillis())) {
+						// contains the start; update the end
+						twi.setEnd(getEndMillis());
+					} else {
+						// contains the end; update the start
+						twi.setStart(getStartMillis(), false);
+					}
+				} else {
+					// interval is no longer within task interval
+					toRemove.add(twi);
+				}
+			}
+		}
+		workIntervals.removeAll(toRemove);
+	}
+
 	/**
 	 * Returns the name of the task.
 	 */
@@ -434,5 +539,13 @@ public class Task implements Serializable
 		cv.put(Schema.END_INSTANT, taskInterval.getEndMillis());
 		cv.put(Schema.NOTES, notes);
 		return cv;
+	}
+	
+	/** Compares tasks by due date */
+	@Override
+	public int compareTo(Task another) {
+		long ldue = getEndMillis();
+		long rdue = another.getEndMillis();
+		return ldue < rdue ? -1 : (ldue == rdue ? 0 : 1);
 	}
 }

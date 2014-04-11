@@ -17,6 +17,7 @@ import android.text.format.DateUtils;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.AbsoluteLayout;
 import android.widget.AbsoluteLayout.LayoutParams;
@@ -308,7 +309,7 @@ public class CalendarTaskView extends View {
 			day.roll(Calendar.DAY_OF_YEAR,  true);
 		}
 	}
-	
+
 	private void drawBetterBackground(Canvas canvas)
 	{
 		float counter = startTime;

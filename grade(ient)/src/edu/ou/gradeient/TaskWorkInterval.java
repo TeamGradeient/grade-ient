@@ -1,23 +1,35 @@
 package edu.ou.gradeient;
 
+import java.io.Serializable;
+
 import org.joda.time.DateTime;
 import org.joda.time.MutableInterval;
 import org.joda.time.ReadableInterval;
 
 import android.content.ContentResolver;
+import android.content.ContentUris;
+import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.BaseColumns;
+import android.text.TextUtils;
 
-public class TaskWorkInterval {
+/**
+ * Represents a work interval for a task.
+ * This class does NO checking whether it's within the parent Task's interval.
+ */
+public class TaskWorkInterval implements Comparable<TaskWorkInterval>, 
+		Serializable {
 
 	/** Schema for the work interval table in the database and ContentProvider */
 	public static final class Schema implements BaseColumns {
 		/** 
 		 * URI for the work interval table. Valid URIs: <ul>
-		 * <li><code>CONTENT_URI</code>: valid for insert, update, delete
+		 * <li><code>CONTENT_URI</code>: valid for all operations
 		 * <li><code>CONTENT_URI/#</code>: work time with ID # (valid only
 		 * for update and delete)
+		 * <li><code>CONTENT_URI/#/##</code>: work times in range # to ##
+		 * in milliseconds since epoch (valid only for query)
 		 * <li><code>CONTENT_URI/task/#</code>: work times for task ID #
 		 * (valid for query, update, and delete)
 		 */
@@ -34,14 +46,15 @@ public class TaskWorkInterval {
 
 		/* default */ static final String TABLE = "Task_Work_Interval";
 		public static final String TASK_ID = "task_id";
-		public static final String START_INSTANT = "start_instant";
-		public static final String END_INSTANT = "end_instant";
+		public static final String START_INSTANT = Task.Schema.START_INSTANT;
+		public static final String END_INSTANT = Task.Schema.END_INSTANT;
 		public static final String CERTAINTY = "certainty";
 
 		public static final String[] COLUMNS = { _ID, TASK_ID, START_INSTANT, 
 			END_INSTANT, CERTAINTY };
 		
-		public static final String SORT_ORDER_DEFAULT = END_INSTANT + " ASC";
+		/** Work intervals compare by start instant ascending */
+		public static final String SORT_ORDER_DEFAULT = START_INSTANT + " ASC";
 		
 		/** ID (long not null) */
 		public static final int COL_ID = 0;
@@ -51,19 +64,65 @@ public class TaskWorkInterval {
 		public static final int COL_START_INSTANT = 2;
 		/** End instant in millis since epoch (long >= 0 not null) */
 		public static final int COL_END_INSTANT = 3;
-		/** Priority (not null, 0 = maybe, 1 = definitely) */
+		/** Certainty (not null, 0 = maybe, 1 = definitely) */
 		public static final int COL_CERTAINTY = 4;
 		
 		/** Gets the URI for the work time with the given ID (only valid for
 		 * use with update and delete) */
 		public static Uri getUriForId(long id) {
-			return Uri.withAppendedPath(CONTENT_URI, "/" + id);
+			return ContentUris.withAppendedId(CONTENT_URI, id);
 		}
 		/** Gets the URI for the work times for the given task ID 
 		 * (only valid for use with query) */
 		public static Uri getUriForTaskId(long taskId) {
-			return Uri.withAppendedPath(CONTENT_URI, "/task/" + taskId);
+			return Uri.withAppendedPath(CONTENT_URI, "task/" + taskId);
 		}
+		/** Gets the URI for the work times overlapping the given date range
+		 * (in milliseconds since epoch) */
+		public static Uri getUriForRange(long start, long end) {
+			return Uri.withAppendedPath(CONTENT_URI, start + "/" + end);
+		}
+		
+		
+		
+		public static final Uri CONTENT_URI_HYBRID = Uri.withAppendedPath(
+				TaskProvider.CONTENT_URI, "work_intervals_tasks");
+		/** MIME type for list of hybrid work times/tasks */
+		public static final String CONTENT_TYPE_HYBRID = 
+				ContentResolver.CURSOR_DIR_BASE_TYPE + 
+				"/vnd." + TaskProvider.AUTHORITY + "_work_intervals_tasks";
+		/** MIME type for single hybrid work time/task */
+		public static final String CONTENT_ITEM_TYPE_HYBRID = 
+				ContentResolver.CURSOR_ITEM_BASE_TYPE + 
+				"/vnd." + TaskProvider.AUTHORITY + "_work_intervals_tasks";
+		//TODO doc
+		public static Uri getUriForAwesome(long start) {
+			return Uri.withAppendedPath(CONTENT_URI_HYBRID, start + ""); 
+		}
+		
+		/** Special join table for getting work intervals with task names
+		 * and subjects ordered by start date */
+		static final String TABLE_HYBRID = TABLE + " inner join " 
+				+ Task.Schema.TABLE + " on " + TABLE + "." + TASK_ID + " = "
+				+ Task.Schema.TABLE + "." + Task.Schema._ID;
+		/** Columns for TABLE_JOIN */
+		public static final String[] COLUMNS_HYBRID = { 
+			TABLE + "." + _ID, Task.Schema.TABLE + "." + Task.Schema.NAME,
+			Task.Schema.TABLE + "." + Task.Schema.SUBJECT_NAME, 
+			TABLE + "." + START_INSTANT, TABLE + "." + END_INSTANT, 
+			TABLE + "." + CERTAINTY };
+		
+		//TODO is this even the right way to do this?
+		private static final String PROJ_FMT = "^1.^2 as ^2";
+		public static final String[] PROJ_ARGS_JOIN = {
+			TextUtils.expandTemplate(PROJ_FMT, TABLE, _ID).toString(),
+			TextUtils.expandTemplate(PROJ_FMT, Task.Schema.TABLE, 
+					Task.Schema.NAME).toString(),
+			TextUtils.expandTemplate(PROJ_FMT, Task.Schema.TABLE,
+					Task.Schema.SUBJECT_NAME).toString(),
+			TextUtils.expandTemplate(PROJ_FMT, TABLE, START_INSTANT).toString(),
+			TextUtils.expandTemplate(PROJ_FMT, TABLE, END_INSTANT).toString(),
+			TextUtils.expandTemplate(PROJ_FMT, TABLE, CERTAINTY).toString() };
 	}
 	
 	private static final long serialVersionUID = 7389238194133816662L;
@@ -88,8 +147,8 @@ public class TaskWorkInterval {
 			boolean isCertain) {
 		this.id = NEW_ID;
 		this.taskId = taskId;
-		this.interval = new MutableInterval(start, end);
 		this.isCertain = isCertain;
+		this.interval = new MutableInterval(start, end);
 	}
 	
 	/** Copy constructor */
@@ -171,10 +230,13 @@ public class TaskWorkInterval {
 		return interval.getEndMillis();
 	}
 	
-	//TODO possibly the following methods should check the interval's
-	// validity relative to the parent task
 	/**
-	 * Sets the start date/time for the interval. 
+	 * Sets the start date/time for the interval.
+	 * @param start The new start date/time.
+	 * @param maintainDuration If this is true, the end date/time will be
+	 * shifted to maintain the task's previous duration. If this is false and
+	 * start is after end, end will be updated to be the same as start.
+	 * @throws IllegalArgumentException if start is < 0
 	 */
 	public void setStart (long start, boolean maintainDuration) {
 		FunTimes.setStart(interval, start, maintainDuration);
@@ -185,9 +247,9 @@ public class TaskWorkInterval {
 	 * @param hour new hour of day, 0-23
 	 * @param minute new minute of hour, 0-59
 	 * @param maintainDuration If this is true, the end time will be shifted
-	 * to maintain the task's previous duration. If this is false and setting
-	 * start's time to hour and minute results in a time that is after end,
-	 * end will be updated to be the same as start.
+	 * to maintain the interval's previous duration. If this is false and 
+	 * setting start's time to hour and minute results in a time that is 
+	 * after end, end will be updated to be the same as start.
 	 * @throws IllegalArgumentException if minute or hour is invalid
 	 */
 	public void setStartTime(int hour, int minute, boolean maintainDuration) {
@@ -200,9 +262,9 @@ public class TaskWorkInterval {
 	 * @param month new month of year, 0-11
 	 * @param day new day of month, 1-31
 	 * @param maintainDuration If this is true, the end date will be shifted
-	 * to maintain the task's previous duration. If this is false and setting
-	 * start's date to the given values results in a date that is after end,
-	 * end will be updated to be the same as start.
+	 * to maintain the interval's previous duration. If this is false and 
+	 * setting start's date to the given values results in a date that is after
+	 * end, end will be updated to be the same as start.
 	 * @throws IllegalArgumentException if day, month, or year is invalid
 	 */
 	public void setStartDate(int year, int month, int day,
@@ -255,5 +317,37 @@ public class TaskWorkInterval {
 	 */
 	public void setStartAndEnd(long start, long end) {
 		FunTimes.setStartAndEnd(interval, start, end);
+	}
+
+	/**
+	 * Shifts the time of this interval by the specified number of milliseconds.
+	 * @param shiftBy time in milliseconds
+	 */
+	public void shiftTime(long shiftBy) {
+		FunTimes.shiftTimeOfInterval(interval, shiftBy);
+	}
+	
+	/**
+	 * Put this work interval's contents (except ID) in a ContentValues object, 
+	 * with keys corresponding to the column names of the database table.
+	 * (The ID is not returned because it is an autoincrement primary key
+	 * and can't be set or updated.)
+	 * @return The ContentValues object with the task
+	 */
+	public ContentValues toContentValues() {
+		ContentValues cv = new ContentValues();
+		cv.put(Schema.TASK_ID, taskId);
+		cv.put(Schema.START_INSTANT, getStartMillis());
+		cv.put(Schema.END_INSTANT, getEndMillis());
+		cv.put(Schema.CERTAINTY, isCertain ? 1 : 0);
+		return cv;
+	}
+	
+	/** Compares intervals by start date */
+	@Override
+	public int compareTo(TaskWorkInterval another) {
+		long lstart = getStartMillis();
+		long rstart = another.getStartMillis();
+		return lstart < rstart ? -1 : (lstart == rstart ? 0 : 1);
 	}
 }
