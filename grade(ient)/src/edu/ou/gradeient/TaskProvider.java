@@ -45,6 +45,7 @@ public class TaskProvider extends ContentProvider {
 	private static final int TASK_WORK_INTERVAL_ID = 5;
 	private static final int TASK_WORK_INTERVALS_TASK_ID = 6;
 	private static final int TASK_WORK_INTERVALS_DATES = 7;
+	private static final int WORK_INTERVALS_TASKS = 8;
 //	private static final int SUBJECTS = 10;
 //	private static final int SUBJECT_ID = 11;
 //	private static final int SEMESTERS = 20;
@@ -56,10 +57,11 @@ public class TaskProvider extends ContentProvider {
 		URI_MATCHER.addURI(AUTHORITY, "tasks", TASKS);
 		URI_MATCHER.addURI(AUTHORITY, "tasks/#", TASK_ID);
 		URI_MATCHER.addURI(AUTHORITY, "tasks/#/#", TASK_DATES);
-		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals", TASK_WORK_INTERVALS);
-		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals/#", TASK_WORK_INTERVAL_ID);
-		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals/task/#", TASK_WORK_INTERVALS_TASK_ID);
-		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals/#/#", TASK_WORK_INTERVALS_DATES);
+		URI_MATCHER.addURI(AUTHORITY, "tasks/work_intervals", TASK_WORK_INTERVALS);
+		URI_MATCHER.addURI(AUTHORITY, "tasks/work_intervals/#", TASK_WORK_INTERVAL_ID);
+		URI_MATCHER.addURI(AUTHORITY, "tasks/work_intervals/task/#", TASK_WORK_INTERVALS_TASK_ID);
+		URI_MATCHER.addURI(AUTHORITY, "tasks/work_intervals/#/#", TASK_WORK_INTERVALS_DATES);
+		URI_MATCHER.addURI(AUTHORITY, "work_intervals_tasks/#", WORK_INTERVALS_TASKS);
 //		URI_MATCHER.addURI(AUTHORITY, "subjects", SUBJECTS);
 //		URI_MATCHER.addURI(AUTHORITY, "subjects/#", SUBJECT_ID);
 //		URI_MATCHER.addURI(AUTHORITY, "semesters", SEMESTERS);
@@ -73,6 +75,11 @@ public class TaskProvider extends ContentProvider {
 					Task.Schema.END_INSTANT + ") "
 			+ "or (" + Task.Schema.START_INSTANT + " between ^1 and ^2)"
 			+ " or (" + Task.Schema.END_INSTANT + " between ^1 and ^2)";
+	private static final String WORK_INTERVALS_TASKS_WHERE =
+			TextUtils.expandTemplate("(^1 between ^2.^3 and ^2.^4) "
+					+ "or (^2.^3 > ^1)", "^1", TaskWorkInterval.Schema.TABLE,
+					TaskWorkInterval.Schema.START_INSTANT,
+					TaskWorkInterval.Schema.END_INSTANT).toString();
 	
 	@Override
 	public boolean onCreate() {
@@ -88,6 +95,7 @@ public class TaskProvider extends ContentProvider {
 	public Cursor query(Uri uri, String[] projection, String selection,
 			String[] selectionArgs, String sortOrder) {
 		SQLiteQueryBuilder builder = new SQLiteQueryBuilder();
+		String limit = null;
 		int uriMatch = URI_MATCHER.match(uri);
 		
 		// Get the start and end date segments of the URI if applicable
@@ -100,16 +108,20 @@ public class TaskProvider extends ContentProvider {
 			builder.appendWhereEscapeString(TextUtils.expandTemplate(
 					TASK_DATES_WHERE, start, end).toString());
 		}
-		
+		// Or just the end date segment
+		else if (uriMatch == WORK_INTERVALS_TASKS) {
+			builder.appendWhere(TextUtils.expandTemplate(
+					WORK_INTERVALS_TASKS_WHERE, uri.getLastPathSegment()));
+		}
 		// In the case of most *_ID queries, limit to returning the one result 
 		// matching the requested ID.
-		if (uriMatch == TASK_ID) {
+		else if (uriMatch == TASK_ID) {
 //				|| uriMatch == SUBJECT_ID || uriMatch == SEMESTER_ID) {
 			builder.appendWhere(BaseColumns._ID + " = " + 
 					uri.getLastPathSegment());
 		}
 		
-		// Choose the correct table (and the sort order if relevant)
+		// Choose the correct table (and the sort order and columns if relevant)
 		switch (uriMatch) {
 			case TASKS:
 			case TASK_DATES:
@@ -125,6 +137,15 @@ public class TaskProvider extends ContentProvider {
 				if (TextUtils.isEmpty(sortOrder))
 					sortOrder = TaskWorkInterval.Schema.SORT_ORDER_DEFAULT;
 				builder.setTables(TaskWorkInterval.Schema.TABLE);
+				break;
+			case WORK_INTERVALS_TASKS:
+				if (TextUtils.isEmpty(sortOrder))
+					sortOrder = TaskWorkInterval.Schema.TABLE + "." 
+							+ TaskWorkInterval.Schema.SORT_ORDER_DEFAULT;
+				builder.setTables(TaskWorkInterval.Schema.TABLE_HYBRID);
+				limit = "20"; //TODO is this ok?
+				if (projection == null)
+					projection = TaskWorkInterval.Schema.COLUMNS_HYBRID;
 				break;
 //			case SUBJECTS:
 //				if (TextUtils.isEmpty(sortOrder))
@@ -147,7 +168,7 @@ public class TaskProvider extends ContentProvider {
 		
 		SQLiteDatabase db = Database.getHelper().getReadableDatabase();
 		Cursor cursor = builder.query(db, projection, selection, selectionArgs,
-				null, null, sortOrder);
+				null, null, sortOrder, limit);
 		//TODO apparently if returning joins of tables, it might be better to
 		// use the general authority URI instead
 		cursor.setNotificationUri(getContext().getContentResolver(), uri);
@@ -168,6 +189,8 @@ public class TaskProvider extends ContentProvider {
 				return TaskWorkInterval.Schema.CONTENT_TYPE;
 			case TASK_WORK_INTERVAL_ID: 
 				return TaskWorkInterval.Schema.CONTENT_ITEM_TYPE;
+			case WORK_INTERVALS_TASKS:
+				return TaskWorkInterval.Schema.CONTENT_TYPE;
 //			case SUBJECTS:		return Subject.Schema.CONTENT_TYPE;
 //			case SUBJECT_ID:	return Subject.Schema.CONTENT_ITEM_TYPE;
 //			case SEMESTERS:		return Semester.Schema.CONTENT_TYPE;

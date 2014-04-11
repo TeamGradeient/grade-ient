@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="2dp"
+    android:paddingBottom="2dp"
+    android:orientation="horizontal" >
+<!--     android:minHeight="?android:attr/listPreferredItemHeight" >
+ -->    <!-- TODO change height? -->
+
+<!-- TODO eventually we will need a slightly different one for work times
+(it needs a longer last column for the time range for the work time) -->
+    <TextView
+        android:id="@+id/list_subject"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="5"
+        style="@style/HomeScreenListItem" />
+
+    <TextView
+        android:id="@+id/list_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="10"
+        style="@style/HomeScreenListItem" />
+
+    <TextView
+        android:id="@+id/list_date"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="4"
+        style="@style/HomeScreenListItem" />
+    
+    <TextView
+        android:id="@+id/list_time"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="5"
+        android:gravity="right"
+        android:textAlignment="gravity"
+        style="@style/HomeScreenListItem" />
+</LinearLayout>

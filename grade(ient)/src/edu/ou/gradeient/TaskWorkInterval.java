@@ -12,6 +12,7 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.BaseColumns;
+import android.text.TextUtils;
 
 /**
  * Represents a work interval for a task.
@@ -33,7 +34,7 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 		 * (valid for query, update, and delete)
 		 */
 		public static final Uri CONTENT_URI = Uri.withAppendedPath(
-				Task.Schema.CONTENT_URI, "/task_work_intervals");
+				Task.Schema.CONTENT_URI, "/work_intervals");
 		/** MIME type for list of work times */
 		public static final String CONTENT_TYPE = 
 				ContentResolver.CURSOR_DIR_BASE_TYPE + 
@@ -81,6 +82,47 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 		public static Uri getUriForRange(long start, long end) {
 			return Uri.withAppendedPath(CONTENT_URI, start + "/" + end);
 		}
+		
+		
+		
+		public static final Uri CONTENT_URI_HYBRID = Uri.withAppendedPath(
+				TaskProvider.CONTENT_URI, "work_intervals_tasks");
+		/** MIME type for list of hybrid work times/tasks */
+		public static final String CONTENT_TYPE_HYBRID = 
+				ContentResolver.CURSOR_DIR_BASE_TYPE + 
+				"/vnd." + TaskProvider.AUTHORITY + "_work_intervals_tasks";
+		/** MIME type for single hybrid work time/task */
+		public static final String CONTENT_ITEM_TYPE_HYBRID = 
+				ContentResolver.CURSOR_ITEM_BASE_TYPE + 
+				"/vnd." + TaskProvider.AUTHORITY + "_work_intervals_tasks";
+		//TODO doc
+		public static Uri getUriForAwesome(long start) {
+			return Uri.withAppendedPath(CONTENT_URI_HYBRID, start + ""); 
+		}
+		
+		/** Special join table for getting work intervals with task names
+		 * and subjects ordered by start date */
+		static final String TABLE_HYBRID = TABLE + " inner join " 
+				+ Task.Schema.TABLE + " on " + TABLE + "." + TASK_ID + " = "
+				+ Task.Schema.TABLE + "." + Task.Schema._ID;
+		/** Columns for TABLE_JOIN */
+		public static final String[] COLUMNS_HYBRID = { 
+			TABLE + "." + _ID, Task.Schema.TABLE + "." + Task.Schema.NAME,
+			Task.Schema.TABLE + "." + Task.Schema.SUBJECT_NAME, 
+			TABLE + "." + START_INSTANT, TABLE + "." + END_INSTANT, 
+			TABLE + "." + CERTAINTY };
+		
+		//TODO is this even the right way to do this?
+		private static final String PROJ_FMT = "^1.^2 as ^2";
+		public static final String[] PROJ_ARGS_JOIN = {
+			TextUtils.expandTemplate(PROJ_FMT, TABLE, _ID).toString(),
+			TextUtils.expandTemplate(PROJ_FMT, Task.Schema.TABLE, 
+					Task.Schema.NAME).toString(),
+			TextUtils.expandTemplate(PROJ_FMT, Task.Schema.TABLE,
+					Task.Schema.SUBJECT_NAME).toString(),
+			TextUtils.expandTemplate(PROJ_FMT, TABLE, START_INSTANT).toString(),
+			TextUtils.expandTemplate(PROJ_FMT, TABLE, END_INSTANT).toString(),
+			TextUtils.expandTemplate(PROJ_FMT, TABLE, CERTAINTY).toString() };
 	}
 	
 	private static final long serialVersionUID = 7389238194133816662L;

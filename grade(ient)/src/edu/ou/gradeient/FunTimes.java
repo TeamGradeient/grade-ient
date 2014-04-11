@@ -1,18 +1,71 @@
 package edu.ou.gradeient;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.joda.time.MutableInterval;
+import org.joda.time.chrono.ISOChronology;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
+import android.text.format.DateFormat;
 
 /**
  * Handling time is fun! Let's make utility methods for it!
  */
 public class FunTimes {
+	private static final DateTimeFormatter MONTH_DAY_NUMERIC =
+			DateTimeFormat.forPattern("M/d");
+	private static final DateTimeFormatter TIME_FORMATTER =
+			DateTimeFormat.forPattern("h:mma");
+	private static final DateTimeFormatter TIME_24_FORMATTER =
+			DateTimeFormat.forPattern("HH:mm");
+	private static final ISOChronology chron = ISOChronology.getInstance();
+	//TODO will break with time zones
+	private static long todayEnd = 0;
+	private static long tomorrowEnd = 0;
+	static {
+		updateTodayEnd();
+	}
+	
+	private static void updateTodayEnd() {
+		if (System.currentTimeMillis() > todayEnd) {
+			DateTime today = LocalDate.now().toDateTimeAtStartOfDay(
+					DateTimeZone.getDefault());
+			todayEnd = today.plusDays(1).getMillis() - 1;
+			tomorrowEnd = today.plusDays(2).getMillis() - 1;
+		}
+	}
+	
+	/** Returns a m/d date. */
+	public static String formatMonthDayNumeric(long millis) {
+		return MONTH_DAY_NUMERIC.print(millis);
+	}
+	
+	/** Returns 12-hour time with am/pm or 24-hour time, as appropriate. */
+	public static String formatTime(long millis) {
+		if (DateFormat.is24HourFormat(GradeientApp.getAppContext()))
+			return TIME_24_FORMATTER.print(millis);
+		return TIME_FORMATTER.print(millis).toLowerCase();
+	}
+	
+	/** Returns "today", "tomorrow", or a m/d date. */
+	public static String formatMonthDayTodayTomorrow(long millis) {
+		updateTodayEnd();
+		if (millis <= todayEnd)
+			return "today";
+		if (millis <= tomorrowEnd)
+			return "tomorrow";
+		return formatMonthDayNumeric(millis);
+	}
+	
 	/**
 	 * Sets the start date/time for the interval.
 	 * @param interval The interval in question (will be modified).
 	 * @param start The new start date/time.
 	 * @param maintainDuration If this is true, the end date/time will be
-	 * shifted to maintain the task's previous duration. If this is false and
-	 * start is after end, end will be updated to be the same as start.
+	 * shifted to maintain the interval's previous duration. If this is false 
+	 * and start is after end, end will be updated to be the same as start.
 	 * @throws IllegalArgumentException if start is < 0
 	 */
 	public static void setStart (MutableInterval interval, long start, 
@@ -33,9 +86,9 @@ public class FunTimes {
 	 * @param hour new hour of day, 0-23
 	 * @param minute new minute of hour, 0-59
 	 * @param maintainDuration If this is true, the end time will be shifted
-	 * to maintain the task's previous duration. If this is false and setting
-	 * start's time to hour and minute results in a time that is after end,
-	 * end will be updated to be the same as start.
+	 * to maintain the interval's previous duration. If this is false and 
+	 * setting start's time to hour and minute results in a time that is 
+	 * after end, end will be updated to be the same as start.
 	 * @throws IllegalArgumentException if minute or hour is invalid
 	 */
 	public static void setStartTime(MutableInterval interval, int hour, 
@@ -51,9 +104,9 @@ public class FunTimes {
 	 * @param month new month of year, 0-11
 	 * @param day new day of month, 1-31
 	 * @param maintainDuration If this is true, the end date will be shifted
-	 * to maintain the task's previous duration. If this is false and setting
-	 * start's date to the given values results in a date that is after end,
-	 * end will be updated to be the same as start.
+	 * to maintain the interval's previous duration. If this is false and 
+	 * setting start's date to the given values results in a date that is 
+	 * after end, end will be updated to be the same as start.
 	 * @throws IllegalArgumentException if day, month, or year is invalid
 	 */
 	public static void setStartDate(MutableInterval interval, int year, 
