@@ -57,24 +57,24 @@ public class HomeScreenActivity extends Activity {
 		
 		LinearLayout nextTaskLayout = 
 				(LinearLayout) findViewById(R.id.home_next_task);
-		nextTaskLayout.setBackgroundColor(Color.rgb(247, 157, 11));
+		//nextTaskLayout.setBackgroundColor(Color.rgb(247, 157, 11));
+		nextTaskLayout.setBackgroundColor(getResources().getColor(android.R.color.holo_orange_light));
 		
 		/*---------------set up calendar button---------------*/
 		RelativeLayout calendarButton = (RelativeLayout) 
 				findViewById(R.id.home_goto_calendar_button);
-		calendarButton.setBackgroundColor(Color.rgb(52, 148, 43));
+		//calendarButton.setBackgroundColor(Color.rgb(52, 148, 43));
+		calendarButton.setBackgroundColor(getResources().getColor(android.R.color.holo_green_dark));
 		TextView calendarButtonLabel = (TextView)
 				findViewById(R.id.home_goto_calendar_button_label);
 		calendarButtonLabel.setTextColor(Color.WHITE);
-		
-		
 	}
 
 	public void startCalendarActivity(View view)
 	{
 		startActivity(new Intent (this, CalendarActivity.class));
 	}
-	
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
