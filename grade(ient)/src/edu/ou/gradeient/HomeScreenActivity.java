@@ -13,6 +13,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
@@ -21,6 +22,7 @@ public class HomeScreenActivity extends Activity
 		implements LoaderManager.LoaderCallbacks<Cursor>{
 
 	private static final String TAG = "HomeScreenActivity";
+	private static final int EDIT_REQUEST = 2;
 	
 	// These are the columns to get from the database for each view
 	private static final String[] TASK_LOADER_COLUMNS = { Task.Schema._ID,
@@ -70,7 +72,7 @@ public class HomeScreenActivity extends Activity
 		
 		/*---------------display next task---------------*/
 		TextView nextTaskTitle = (TextView) findViewById(R.id.home_next_task_title);
-		nextTaskTitle.setText("Next task!");
+		nextTaskTitle.setText("Essay 3");
 
 		// set up CursorAdapters
 		int[] viewIds = { R.id.list_subject, R.id.list_name,
@@ -91,8 +93,7 @@ public class HomeScreenActivity extends Activity
 				v.setText(text);
 			}
 		};
-		ListView upcomingWork = (ListView)findViewById(R.id.upcoming_work);
-		upcomingWork.setAdapter(workAdapter);
+		ListView upcomingWork = (ListView)findViewById(R.id.upcoming_work);		upcomingWork.setAdapter(workAdapter);
 		
 		String[] taskColumns = { Task.Schema.SUBJECT_NAME, Task.Schema.NAME,
 				Task.Schema.END_INSTANT, Task.Schema.END_INSTANT };
@@ -110,6 +111,9 @@ public class HomeScreenActivity extends Activity
 		ListView upcomingTasks = (ListView)findViewById(R.id.upcoming_tasks);
 		upcomingTasks.setAdapter(taskAdapter);
 
+		//Add a listener that will be called when an upcoming task is clicked
+		upcomingTasks.setOnItemClickListener(new nextTaskItemClickListener());
+
 		// register for notifications and init loaders
 		callbacks = this;
 		getLoaderManager().initLoader(TASK_LOADER_ID, null, callbacks);
@@ -119,6 +123,11 @@ public class HomeScreenActivity extends Activity
 	public void startCalendarActivity(View view)
 	{
 		startActivity(new Intent (this, CalendarActivity.class));
+	}
+	
+	public void startTaskListActivity(View view)
+	{
+		startActivity(new Intent (this, TaskListActivity.class));
 	}
 	
 	@Override
@@ -199,6 +208,27 @@ public class HomeScreenActivity extends Activity
 				throw new IllegalArgumentException("Unknown id: " + id);
 		}
 		// The listview now displays the queried data.
+	}
+	
+	//Provides a listener to start editing a task when an item is clicked on in the
+	//next tasks area.
+	private class nextTaskItemClickListener 
+	implements AdapterView.OnItemClickListener
+	{
+		@Override
+		public void onItemClick(AdapterView<?> adapterView, View view,
+				int position, long id) 
+		{
+			System.out.println("Task " + id + " clicked!");
+
+			Intent intent = new Intent(adapterView.getContext(), EditTaskActivity.class);
+			// Indicate that this is an existing task to edit
+			intent.putExtra(EditTaskActivity.Extras.TASK_STATUS,
+					EditTaskActivity.TaskStatus.EDIT_TASK);
+			// Indicate that it is the task with the given ID that should be edited
+			intent.putExtra(EditTaskActivity.Extras.TASK_ID, id);
+			startActivity(intent);
+		}
 	}
 
 	@Override
