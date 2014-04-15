@@ -48,6 +48,7 @@
         </activity>
         <activity
             android:name="edu.ou.gradeient.HomeScreenActivity"
+            android:screenOrientation="portrait"
             android:label="@string/title_activity_home_screen" >
              <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
