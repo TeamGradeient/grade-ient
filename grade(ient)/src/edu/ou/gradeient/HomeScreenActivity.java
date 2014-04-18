@@ -1,5 +1,7 @@
 package edu.ou.gradeient;
 
+import java.util.ArrayList;
+
 import android.app.Activity;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
@@ -14,6 +16,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
@@ -37,6 +40,15 @@ public class HomeScreenActivity extends Activity
 	private SimpleCursorAdapter workAdapter;
 	/** Callbacks to interact with the LoaderManager */
 	private LoaderManager.LoaderCallbacks<Cursor> callbacks;
+	
+	/**DrawerLayout to hold the slide-out drawer*/
+	private ListView drawerList;
+	
+	/**Adapter to hold string array for drawer items*/
+	private ArrayAdapter<String> drawerAdapter;
+	
+	/**ArrayList of strings for drawer items*/
+	private ArrayList<String> drawerItems;
 	
 	/** request to add task */
 	private static final int ADD_REQUEST = 1;
@@ -93,7 +105,8 @@ public class HomeScreenActivity extends Activity
 				v.setText(text);
 			}
 		};
-		ListView upcomingWork = (ListView)findViewById(R.id.upcoming_work);		upcomingWork.setAdapter(workAdapter);
+		ListView upcomingWork = (ListView)findViewById(R.id.upcoming_work);		
+		upcomingWork.setAdapter(workAdapter);
 		
 		String[] taskColumns = { Task.Schema.SUBJECT_NAME, Task.Schema.NAME,
 				Task.Schema.END_INSTANT, Task.Schema.END_INSTANT };
@@ -118,6 +131,22 @@ public class HomeScreenActivity extends Activity
 		callbacks = this;
 		getLoaderManager().initLoader(TASK_LOADER_ID, null, callbacks);
 		getLoaderManager().initLoader(WORK_LOADER_ID, null, callbacks);
+		
+		
+		/*--------------Slide-out drawer--------------*/
+		drawerList = (ListView) findViewById(R.id.nav_drawer);
+		
+		//Initialize ArrayList of strings
+		drawerItems = new ArrayList<String>();
+		drawerItems.add("Add task");
+		drawerItems.add("Task list");
+		//TODO: Don't hardcode drawer item names! These are just temporary.
+		drawerAdapter = new ArrayAdapter<String>(this,
+				android.R.layout.simple_list_item_1,
+				android.R.id.text1,
+				drawerItems);
+		drawerList.setAdapter(drawerAdapter);
+		
 	}
 
 	public void startCalendarActivity(View view)
