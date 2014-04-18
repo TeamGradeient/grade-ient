@@ -10,6 +10,7 @@ import android.content.Loader;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.v4.widget.DrawerLayout;
 import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.Menu;
@@ -26,6 +27,8 @@ public class HomeScreenActivity extends Activity
 
 	private static final String TAG = "HomeScreenActivity";
 	private static final int EDIT_REQUEST = 2;
+	private static final int TASK_LIST = 0;
+	private static final int CALENDAR_ITEM = 1;
 	
 	// These are the columns to get from the database for each view
 	private static final String[] TASK_LOADER_COLUMNS = { Task.Schema._ID,
@@ -42,6 +45,9 @@ public class HomeScreenActivity extends Activity
 	private LoaderManager.LoaderCallbacks<Cursor> callbacks;
 	
 	/**DrawerLayout to hold the slide-out drawer*/
+	private DrawerLayout drawerLayout;
+	
+	/**ListView to put inside drawer*/
 	private ListView drawerList;
 	
 	/**Adapter to hold string array for drawer items*/
@@ -125,7 +131,7 @@ public class HomeScreenActivity extends Activity
 		upcomingTasks.setAdapter(taskAdapter);
 
 		//Add a listener that will be called when an upcoming task is clicked
-		upcomingTasks.setOnItemClickListener(new nextTaskItemClickListener());
+		upcomingTasks.setOnItemClickListener(new TaskItemClickListener());
 
 		// register for notifications and init loaders
 		callbacks = this;
@@ -134,18 +140,20 @@ public class HomeScreenActivity extends Activity
 		
 		
 		/*--------------Slide-out drawer--------------*/
+		drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
 		drawerList = (ListView) findViewById(R.id.nav_drawer);
 		
 		//Initialize ArrayList of strings
 		drawerItems = new ArrayList<String>();
-		drawerItems.add("Add task");
-		drawerItems.add("Task list");
-		//TODO: Don't hardcode drawer item names! These are just temporary.
+		drawerItems.add(this.getResources().getString(R.string.action_task_list));
+		drawerItems.add(this.getResources().getString(R.string.calendar_view));
+		//Set up adapter and attach it to the ListView
 		drawerAdapter = new ArrayAdapter<String>(this,
 				android.R.layout.simple_list_item_1,
 				android.R.id.text1,
 				drawerItems);
 		drawerList.setAdapter(drawerAdapter);
+		drawerList.setOnItemClickListener(new DrawerItemClickListener());
 		
 	}
 
@@ -241,7 +249,7 @@ public class HomeScreenActivity extends Activity
 	
 	//Provides a listener to start editing a task when an item is clicked on in the
 	//next tasks area.
-	private class nextTaskItemClickListener 
+	private class TaskItemClickListener 
 	implements AdapterView.OnItemClickListener
 	{
 		@Override
@@ -259,6 +267,29 @@ public class HomeScreenActivity extends Activity
 			startActivity(intent);
 		}
 	}
+	
+	private class DrawerItemClickListener implements ListView.OnItemClickListener
+	{
+		@Override
+		public void onItemClick(AdapterView<?> adapterView, View view, int position,
+				long id) 
+		{
+			switch(position)
+			{
+				case TASK_LIST:
+					startTaskListActivity(view);
+					break;
+				case CALENDAR_ITEM:
+					startCalendarActivity(view);
+					break;
+				default:
+					Log.e(TAG, "This task was not recognized!");
+					break;
+			}
+			drawerLayout.closeDrawer(drawerList);
+		}
+		
+	}
 
 	@Override
 	public void onLoaderReset(Loader<Cursor> loader) {
@@ -273,6 +304,13 @@ public class HomeScreenActivity extends Activity
 				workAdapter.swapCursor(null); break;
 			default:
 				throw new IllegalArgumentException("Unknown id: " + id);
+
+//		@Override
+//		public void onItemClick(AdapterView<?> arg0, View arg1, int arg2,
+//				long arg3) {
+//			// TODO Auto-generated method stub
+//			
+//		}
 		}
 	}
 }
