@@ -13,7 +13,7 @@ import android.text.format.DateFormat;
 /**
  * Handling time is fun! Let's make utility methods for it!
  */
-public class FunTimes {
+public class TimeUtils {
 	private static final DateTimeFormatter MONTH_DAY_NUMERIC =
 			DateTimeFormat.forPattern("M/d");
 	private static final DateTimeFormatter TIME_FORMATTER =

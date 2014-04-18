@@ -15,20 +15,11 @@
             android:layout_height="wrap_content"
             android:orientation="vertical" >
 
-            <edu.ou.gradeient.CalendarTaskView
+            <edu.ou.gradeient.CalendarView
                 android:id="@+id/calendar_task_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" >
-            </edu.ou.gradeient.CalendarTaskView>
-
-            <edu.ou.gradeient.CalendarTaskLayout
-                android:id="@+id/task_layout"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:layout_gravity="fill"
-                android:orientation="horizontal"
-                android:paddingLeft="50sp" >
-            </edu.ou.gradeient.CalendarTaskLayout>
+            </edu.ou.gradeient.CalendarView>
         </FrameLayout>
     </ScrollView>
 

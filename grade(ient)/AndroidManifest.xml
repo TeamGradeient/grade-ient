@@ -37,7 +37,7 @@
         </activity>
 
         <provider
-            android:name="edu.ou.gradeient.TaskProvider"
+            android:name="edu.ou.gradeient.data.TaskProvider"
             android:authorities="edu.ou.gradeient"
             android:exported="false" >
         </provider>

@@ -1,5 +1,7 @@
 package edu.ou.gradeient;
 
+import edu.ou.gradeient.data.Task;
+import edu.ou.gradeient.data.TaskWorkInterval;
 import android.app.Activity;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
@@ -84,7 +86,7 @@ public class CalendarActivity extends Activity
 			return true;
 		case R.id.action_go_to_now:
 			FrameLayout fl = (FrameLayout) findViewById(R.id.calendar_frame);
-			CalendarTaskView ctv=(CalendarTaskView)findViewById(R.id.calendar_task_view);
+			CalendarView ctv=(CalendarView)findViewById(R.id.calendar_task_view);
 			int y = (int)ctv.findYForBeginningOfDay((long)System.currentTimeMillis());
 			fl.scrollTo(0, y);
 		}

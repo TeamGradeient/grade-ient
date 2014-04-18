@@ -1,4 +1,4 @@
-package edu.ou.gradeient;
+package edu.ou.gradeient.data;
 
 /**
  * Represents a subject

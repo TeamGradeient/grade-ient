@@ -1,5 +1,6 @@
 package edu.ou.gradeient;
 
+import edu.ou.gradeient.data.Task;
 import android.app.ListActivity;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
@@ -44,7 +45,7 @@ public class TaskListActivity extends ListActivity
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_task_view);
+		setContentView(R.layout.activity_task_list_view);
 		
 		// Mappings of columns to views
 		String[] dataColumns = { Task.Schema.NAME, Task.Schema.END_INSTANT };

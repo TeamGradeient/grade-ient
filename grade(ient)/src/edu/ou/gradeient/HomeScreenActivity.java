@@ -2,6 +2,8 @@ package edu.ou.gradeient;
 
 import java.util.ArrayList;
 
+import edu.ou.gradeient.data.Task;
+import edu.ou.gradeient.data.TaskWorkInterval;
 import android.app.Activity;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
@@ -105,9 +107,9 @@ public class HomeScreenActivity extends Activity
 			public void setViewText(TextView v, String text) {
 				//TODO fix this method
 				if (v.getId() == R.id.list_date) 
-					text = FunTimes.formatMonthDayTodayTomorrow(Long.parseLong(text));
+					text = TimeUtils.formatMonthDayTodayTomorrow(Long.parseLong(text));
 				else if (v.getId() == R.id.list_time)
-					text = FunTimes.formatTime(Long.parseLong(text));
+					text = TimeUtils.formatTime(Long.parseLong(text));
 				v.setText(text);
 			}
 		};
@@ -121,9 +123,9 @@ public class HomeScreenActivity extends Activity
 			@Override
 			public void setViewText(TextView v, String text) {
 				if (v.getId() == R.id.list_date) 
-					text = FunTimes.formatMonthDayTodayTomorrow(Long.parseLong(text));
+					text = TimeUtils.formatMonthDayTodayTomorrow(Long.parseLong(text));
 				else if (v.getId() == R.id.list_time)
-					text = FunTimes.formatTime(Long.parseLong(text));
+					text = TimeUtils.formatTime(Long.parseLong(text));
 				v.setText(text);
 			}
 		};

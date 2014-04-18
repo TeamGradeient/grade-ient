@@ -1,4 +1,4 @@
-package edu.ou.gradeient;
+package edu.ou.gradeient.data;
 
 import java.io.Serializable;
 
@@ -6,6 +6,7 @@ import org.joda.time.DateTime;
 import org.joda.time.MutableInterval;
 import org.joda.time.ReadableInterval;
 
+import edu.ou.gradeient.TimeUtils;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -239,7 +240,7 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 	 * @throws IllegalArgumentException if start is < 0
 	 */
 	public void setStart (long start, boolean maintainDuration) {
-		FunTimes.setStart(interval, start, maintainDuration);
+		TimeUtils.setStart(interval, start, maintainDuration);
 	}
 	
 	/**
@@ -253,7 +254,7 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 	 * @throws IllegalArgumentException if minute or hour is invalid
 	 */
 	public void setStartTime(int hour, int minute, boolean maintainDuration) {
-		FunTimes.setStartTime(interval, hour, minute, maintainDuration);
+		TimeUtils.setStartTime(interval, hour, minute, maintainDuration);
 	}
 	
 	/**
@@ -269,7 +270,7 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 	 */
 	public void setStartDate(int year, int month, int day,
 			boolean maintainDuration) {
-		FunTimes.setStartDate(interval, year, month, day, maintainDuration);
+		TimeUtils.setStartDate(interval, year, month, day, maintainDuration);
 	}
 	
 	/** 
@@ -279,7 +280,7 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 	 * @throws IllegalArgumentException if end < 0
 	 */
 	public void setEnd (long end) {
-		FunTimes.setEnd(interval, end);
+		TimeUtils.setEnd(interval, end);
 	}
 	
 	/**
@@ -294,7 +295,7 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 	 */
 	public void setEndTime(int hour, int minute, 
 			boolean incDayIfEndBeforeStart) {
-		FunTimes.setEndTime(interval, hour, minute, incDayIfEndBeforeStart);
+		TimeUtils.setEndTime(interval, hour, minute, incDayIfEndBeforeStart);
 	}
 	
 	/**
@@ -306,7 +307,7 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 	 * @throws IllegalArgumentException if day, month, or year is invalid
 	 */
 	public void setEndDate(int year, int month, int day) {
-		FunTimes.setEndDate(interval, year, month, day);
+		TimeUtils.setEndDate(interval, year, month, day);
 	}
 	
 	/**
@@ -316,7 +317,7 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 	 * @throws IllegalArgumentException if start > end
 	 */
 	public void setStartAndEnd(long start, long end) {
-		FunTimes.setStartAndEnd(interval, start, end);
+		TimeUtils.setStartAndEnd(interval, start, end);
 	}
 
 	/**
@@ -324,7 +325,7 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 	 * @param shiftBy time in milliseconds
 	 */
 	public void shiftTime(long shiftBy) {
-		FunTimes.shiftTimeOfInterval(interval, shiftBy);
+		TimeUtils.shiftTimeOfInterval(interval, shiftBy);
 	}
 	
 	/**

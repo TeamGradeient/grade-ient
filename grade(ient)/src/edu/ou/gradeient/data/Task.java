@@ -1,4 +1,4 @@
-package edu.ou.gradeient;
+package edu.ou.gradeient.data;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -10,6 +10,7 @@ import org.joda.time.DateTime;
 import org.joda.time.MutableInterval;
 import org.joda.time.ReadableInterval;
 
+import edu.ou.gradeient.TimeUtils;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -362,7 +363,7 @@ public class Task implements Comparable<Task>, Serializable
 	 */
 	public void setStart (long start, boolean maintainDuration) {
 		long oldStart = getStartMillis();
-		FunTimes.setStart(taskInterval, start, maintainDuration);
+		TimeUtils.setStart(taskInterval, start, maintainDuration);
 		fixWorkIntervalsStart(oldStart, maintainDuration);
 	}
 	
@@ -378,7 +379,7 @@ public class Task implements Comparable<Task>, Serializable
 	 */
 	public void setStartTime(int hour, int minute, boolean maintainDuration) {
 		long oldStart = getStartMillis();
-		FunTimes.setStartTime(taskInterval, hour, minute, maintainDuration);
+		TimeUtils.setStartTime(taskInterval, hour, minute, maintainDuration);
 		fixWorkIntervalsStart(oldStart, maintainDuration);
 	}
 	
@@ -397,7 +398,7 @@ public class Task implements Comparable<Task>, Serializable
 	public void setStartDate(int year, int month, int day,
 			boolean maintainDuration) {
 		long oldStart = getStartMillis();
-		FunTimes.setStartDate(taskInterval, year, month, day, maintainDuration);
+		TimeUtils.setStartDate(taskInterval, year, month, day, maintainDuration);
 		fixWorkIntervalsStart(oldStart, maintainDuration);
 	}
 	
@@ -408,7 +409,7 @@ public class Task implements Comparable<Task>, Serializable
 	 * @throws IllegalArgumentException if end < 0
 	 */
 	public void setEnd (long end) {
-		FunTimes.setEnd(taskInterval, end);
+		TimeUtils.setEnd(taskInterval, end);
 		fixWorkIntervals();
 	}
 	
@@ -424,7 +425,7 @@ public class Task implements Comparable<Task>, Serializable
 	 */
 	public void setEndTime(int hour, int minute, 
 			boolean incDayIfEndBeforeStart) {
-		FunTimes.setEndTime(taskInterval, hour, minute, incDayIfEndBeforeStart);
+		TimeUtils.setEndTime(taskInterval, hour, minute, incDayIfEndBeforeStart);
 		fixWorkIntervals(); //TODO anything else for this one?
 	}
 	
@@ -437,7 +438,7 @@ public class Task implements Comparable<Task>, Serializable
 	 * @throws IllegalArgumentException if day, month, or year is invalid
 	 */
 	public void setEndDate(int year, int month, int day) {
-		FunTimes.setEndDate(taskInterval, year, month, day);
+		TimeUtils.setEndDate(taskInterval, year, month, day);
 		fixWorkIntervals();
 	}
 	
@@ -448,7 +449,7 @@ public class Task implements Comparable<Task>, Serializable
 	 * @throws IllegalArgumentException if start > end
 	 */
 	public void setStartAndEnd(long start, long end) {
-		FunTimes.setStartAndEnd(taskInterval, start, end);
+		TimeUtils.setStartAndEnd(taskInterval, start, end);
 	}
 	
 	/**
@@ -461,7 +462,7 @@ public class Task implements Comparable<Task>, Serializable
 			return;
 		
 		// Shift the start and end
-		FunTimes.shiftTimeOfInterval(taskInterval, shiftBy);
+		TimeUtils.shiftTimeOfInterval(taskInterval, shiftBy);
 		// Shift the work times
 		for (TaskWorkInterval interval : workIntervals)
 			interval.shiftTime(shiftBy);

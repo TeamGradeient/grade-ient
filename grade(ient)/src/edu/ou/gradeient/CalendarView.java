@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.TreeSet;
 
+import edu.ou.gradeient.data.Task;
+import edu.ou.gradeient.data.TaskWorkInterval;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -37,7 +39,7 @@ import android.widget.TextView;
  * static then too).
  */
 
-public class CalendarTaskView extends View {
+public class CalendarView extends View {
 	private static final String TAG = "CalendarTaskView";
 	
 	private static final int DAY_MILLIS = 86400000;
@@ -84,15 +86,15 @@ public class CalendarTaskView extends View {
 	// TEMPORARY
 	private TreeSet<Task> tasks = new TreeSet<Task>();
 
-	public CalendarTaskView(Context context) {
+	public CalendarView(Context context) {
 		super(context);
 		init();
 	}
-	public CalendarTaskView(Context context, AttributeSet attrs) {
+	public CalendarView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		init();
 	}
-	public CalendarTaskView(Context context, AttributeSet attrs, int defStyle) {
+	public CalendarView(Context context, AttributeSet attrs, int defStyle) {
 		super(context, attrs, defStyle);
 		init();
 	}
