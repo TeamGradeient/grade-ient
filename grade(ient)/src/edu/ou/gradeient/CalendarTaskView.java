@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.TreeSet;
 
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -25,11 +24,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 /*
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  * There is a TreeSet of Tasks called "tasks" as a member.
  * TreeSet means the tasks stay sorted.
  * Get the tasks ending after a certain time by:
@@ -41,53 +35,51 @@ import android.widget.TextView;
  * sort of notification/event listening thing, or an update method 
  * CalendarActivity can call (CalendarTaskView's tasks would have to be
  * static then too).
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
  */
 
 public class CalendarTaskView extends View {
 	private static final String TAG = "CalendarTaskView";
 	
-	/**Minimum height of a day*/
-	public final static int DAY_HEIGHT = 200;
+	private static final int DAY_MILLIS = 86400000;
+	
+	private final Typeface roboto = Typeface.createFromAsset(
+			getContext().getAssets(), "Roboto-Regular.ttf");
+	private final Typeface robotoLight = Typeface.createFromAsset(
+			getContext().getAssets(), "Roboto-Light.ttf");
+	
+	private Paint daySeparatorPaint;
+	private Paint dayNameTextPaint;
+	private Paint dayNumberTextPaint;
+	private Paint currentTimeBarPaint;
+	private Paint taskBackgroundPaint;
+	
+	private DisplayMetrics displaymetrics = getResources().getDisplayMetrics();
+	
+	private int absoluteHeight = displaymetrics.heightPixels;
+	private int absoluteWidth = displaymetrics.widthPixels;
+	private int visibleHeight;
+	private int usableWidth;
+	private float scale = displaymetrics.density;
+	/**Minimum height of a day*/ 
+	private float dayHeight = 100 * scale;
 	/**Distance between left edge of screen and the leftmost task*/
-	final static int DISTANCE_FROM_EDGE = 70;
+	private float distanceFromEdge = 35 * scale;
 	/**Half the number of pixels between each task*/
-	final static int DISTANCE_BETWEEN_TASKS = 10;
+	private float distanceBetweenTasks = 5 * scale;
 	/**The number of pixels that the rectangles 
 	 * of task backgrounds should be rounded*/
-	final static int TASK_RECTANGLE_ROUNDING = 15;
-	
-	int numberOfTasks = 0;
-	
-	Paint daySeparatorPaint;
-	Paint dayNameTextPaint;
-	Paint dayNumberTextPaint;
-	Paint currentTimeBarPaint;
-	Paint taskBackgroundPaint;
-	
-	DisplayMetrics displaymetrics = new DisplayMetrics();
-	
-	int absoluteHeight;
-	int absoluteWidth;
-	int visibleHeight;
-	int actionBarHeight;
-	int usableWidth;
-	int dayHeight;
+	private float taskRectangleRounding = 7.5f * scale;
 
-	String taskDueTime;
+	private String taskDueTime;
 	
-	Calendar startDate = new GregorianCalendar();
-	Calendar endDate = new GregorianCalendar();
+	private Calendar startDate = new GregorianCalendar();
+	private Calendar endDate = new GregorianCalendar();
 	
-	long startTime;
-	long endTime;
-	long currentTime = System.currentTimeMillis();
-	long timeInterval;
-	long timeSinceStart;
+	private long startTime;
+	private long endTime;
+	private long currentTime = System.currentTimeMillis();
+	private long timeInterval;
+	private long timeSinceStart;
 
 	// TEMPORARY
 	private TreeSet<Task> tasks = new TreeSet<Task>();
@@ -114,11 +106,8 @@ public class CalendarTaskView extends View {
 		endTime = endDate.getTimeInMillis();
 		timeInterval= endTime-startTime;
 		
-		((Activity)getContext()).getWindowManager().getDefaultDisplay().getMetrics(displaymetrics);
-		absoluteHeight = displaymetrics.heightPixels;
-		absoluteWidth = displaymetrics.widthPixels;
 		setVisibleHeight();
-		usableWidth = (int) (absoluteWidth - DISTANCE_FROM_EDGE);
+		usableWidth = (int) (absoluteWidth - distanceFromEdge);
 		
 		// wait for tasks to show up
 		try { // yaaaay catching everything
@@ -166,20 +155,20 @@ public class CalendarTaskView extends View {
 	}
 	
 	private void drawTask(Canvas canvas, int numberOfTasks, 
-			int taskNumber, float start, float end, String taskName)
+			int taskNumber, long start, long end, String taskName)
 	{	
 		if (start > end) {
 			throw new IllegalArgumentException("Start cannot be greater than end.");
 		}
 		float taskWidth = usableWidth / (float)numberOfTasks;
-		float leftEdge = DISTANCE_FROM_EDGE + taskWidth*taskNumber;
+		float leftEdge = distanceFromEdge + taskWidth*taskNumber;
 		float rightEdge = leftEdge + taskWidth;
-		RectF taskBounds = new RectF (leftEdge + DISTANCE_BETWEEN_TASKS,
+		RectF taskBounds = new RectF (leftEdge + distanceBetweenTasks,
 				findYPosition(start),
-				rightEdge - DISTANCE_BETWEEN_TASKS,
+				rightEdge - distanceBetweenTasks,
 				findYPosition(end));
-		canvas.drawRoundRect(taskBounds, TASK_RECTANGLE_ROUNDING,  
-				TASK_RECTANGLE_ROUNDING,  taskBackgroundPaint);
+		canvas.drawRoundRect(taskBounds, taskRectangleRounding,  
+				taskRectangleRounding,  taskBackgroundPaint);
 		drawTaskDueTime(canvas, leftEdge, rightEdge, end);
 	}
 	
@@ -189,12 +178,12 @@ public class CalendarTaskView extends View {
 		TextView tv = new TextView(al.getContext());
 		AbsoluteLayout.LayoutParams parameters = (LayoutParams) al.getLayoutParams();
 		parameters.x = (int) leftEdge;
-		parameters.y = 100;
+		parameters.y = (int)(50 * scale);
 		al.addView(tv, parameters);
 	}
 	
 	private void drawTaskDueTime(Canvas canvas, float leftEdge, 
-			float rightEdge, float end)
+			float rightEdge, long end)
 	{
 		int flags = DateUtils.FORMAT_SHOW_TIME;
 		flags |= DateUtils.FORMAT_CAP_NOON_MIDNIGHT;
@@ -202,8 +191,8 @@ public class CalendarTaskView extends View {
 			flags |= DateUtils.FORMAT_24HOUR;
 		taskDueTime = DateUtils.formatDateTime(getContext(), 
 				(long) end, flags);
-		canvas.drawText(taskDueTime, leftEdge + DISTANCE_BETWEEN_TASKS,
-				findYPosition(end)+30, dayNameTextPaint);
+		canvas.drawText(taskDueTime, leftEdge + distanceBetweenTasks,
+				findYPosition(end)+(15*scale), dayNameTextPaint);
 	}
 	
 	/**Finds the time represented by a given y-position on the screen*/
@@ -232,8 +221,8 @@ public class CalendarTaskView extends View {
 	
 	public float findYForBeginningOfDay(long milliseconds)
 	{
-		long dayNumber = (milliseconds-startTime)/86400000;
-		return dayNumber*DAY_HEIGHT; 
+		long dayNumber = (milliseconds-startTime)/DAY_MILLIS;
+		return dayNumber*dayHeight; 
 	}
 	
 	/**Probably not going to use this method*/
@@ -252,7 +241,6 @@ public class CalendarTaskView extends View {
 		TypedValue tv = new TypedValue();
 		this.getContext().getTheme().resolveAttribute(android.R.attr.actionBarSize, tv, true);
 		int actionBarHeight = getResources().getDimensionPixelSize(tv.resourceId);
-		actionBarHeight *= 1;
 		visibleHeight = absoluteHeight - actionBarHeight;
 	}
 	
@@ -275,21 +263,19 @@ public class CalendarTaskView extends View {
 	
 	private void initializePaints()
 	{	
-		Typeface roboto=Typeface.createFromAsset(this.getContext().getAssets(), 
-				"Roboto-Regular.ttf");
-		
 		daySeparatorPaint = new Paint ();
 		daySeparatorPaint.setARGB(255,  100,  100,  100);
 		daySeparatorPaint.setStyle(Paint.Style.FILL);
 
 		dayNameTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 		dayNameTextPaint.setTypeface(roboto);
-		dayNameTextPaint.setTextSize(30);
+		dayNameTextPaint.setTextSize(15 * scale);
+//		dayNameTextPaint.setTextSize((int)getResources().getDimension(R.dimen.home_text_l));
 		dayNameTextPaint.setARGB(255,  100,  100,  100);	
 		
 		dayNumberTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 		dayNumberTextPaint.setTypeface(roboto);
-		dayNumberTextPaint.setTextSize(50);
+		dayNumberTextPaint.setTextSize(25 * scale);
 		dayNumberTextPaint.setARGB(255,  100,  100,  100);	
 		
 		currentTimeBarPaint = new Paint();
@@ -312,12 +298,12 @@ public class CalendarTaskView extends View {
 	public void onMeasure(int x, int y)
 	{	
 		setVisibleHeight();
-		float numberOfDays = timeInterval/86400000;
-		if (DAY_HEIGHT*numberOfDays < visibleHeight) {
+		float numberOfDays = timeInterval/DAY_MILLIS;
+		if (dayHeight*numberOfDays < visibleHeight) {
 			setMeasuredDimension(MeasureSpec.getSize(x), visibleHeight);
 		}
 		else {
-			setMeasuredDimension(MeasureSpec.getSize(x), (int) (numberOfDays*DAY_HEIGHT));	
+			setMeasuredDimension(MeasureSpec.getSize(x), (int) (numberOfDays*dayHeight));	
 		}
 	}
 
@@ -327,12 +313,12 @@ public class CalendarTaskView extends View {
 		super.onDraw(canvas);
 		drawBackground(canvas);
 		//drawTasks(canvas);
-		drawTask(canvas, 4, 0, startTime + (1.5f)*86400000f, startTime + (3f)*86400000f, "Calculus");
+		drawTask(canvas, 4, 0, startTime + (long)(1.5*DAY_MILLIS), startTime + 3*DAY_MILLIS, "Calculus");
 		//Draw a task again in the same place to indicate a work time. 
-		//drawTaskBackground(canvas, 4, 0, startTime + (2.2f)*86400000f, startTime + (2.5f)*86400000f);
-		drawTask(canvas, 4, 2, startTime + (2.0f)*86400000f, startTime + (3.5f)*86400000f, "SS work");
-		drawTask(canvas, 4, 3, startTime + (2.5f)*86400000f, startTime + (3.5f)*86400000f, "Comp. Org");
-		drawTask(canvas, 4, 1, startTime + (0.5f)*86400000f, startTime + (2f)*86400000f, "Data Structures.");
+		//drawTaskBackground(canvas, 4, 0, startTime + 2.2*DAY_MILLIS, startTime + 2.5*DAY_MILLIS);
+		drawTask(canvas, 4, 2, startTime + 2*DAY_MILLIS, startTime + (long)(3.5*DAY_MILLIS), "SS work");
+		drawTask(canvas, 4, 3, startTime + (long)(2.5*DAY_MILLIS), startTime + (long)(3.5*DAY_MILLIS), "Comp. Org");
+		drawTask(canvas, 4, 1, startTime + (long)(0.5*DAY_MILLIS), startTime + 2*DAY_MILLIS, "Data Structures.");
 		drawTimeBar(canvas);
 	}
 	
@@ -342,7 +328,7 @@ public class CalendarTaskView extends View {
 			timeSinceStart = currentTime-startTime;
 			canvas.drawRect(0,  timeSinceStart/(float)timeInterval*canvas.getHeight(), 
 					canvas.getWidth(), 
-					timeSinceStart/(float)timeInterval*canvas.getHeight() + 6, 
+					timeSinceStart/(float)timeInterval*canvas.getHeight() + 3*scale, 
 					currentTimeBarPaint);
 			return;
 		}
@@ -370,26 +356,15 @@ public class CalendarTaskView extends View {
 		{
 			//Draw separators
 			canvas.drawRect(0,  dayHeight*(currentDay - firstDay),  width,  
-					dayHeight*(currentDay - firstDay)+5, daySeparatorPaint);
+					dayHeight*(currentDay - firstDay)+2.5f*scale, daySeparatorPaint);
 			//Draw text for each day
 			canvas.drawText(day.getDisplayName(Calendar.DAY_OF_WEEK, 
 												Calendar.SHORT, Locale.US),
-					5, dayHeight*(currentDay-firstDay)+30, dayNameTextPaint);
+					3*scale, dayHeight*(currentDay-firstDay)+15*scale, dayNameTextPaint);
 			canvas.drawText(String.valueOf(day.get(Calendar.DAY_OF_MONTH)),
-					5, dayHeight*(currentDay-firstDay)+75, dayNumberTextPaint);
+					3*scale, dayHeight*(currentDay-firstDay)+37*scale, dayNumberTextPaint);
 			++currentDay;
 			day.roll(Calendar.DAY_OF_YEAR,  true);
 		}
 	}
-
-	private void drawBetterBackground(Canvas canvas)
-	{
-		float counter = startTime;
-//		float dayHeight
-		while (counter < endTime)
-		{
-			
-		}
-	}
-
 }

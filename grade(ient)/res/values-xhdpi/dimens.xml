@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <dimen name="home_text_l">30sp</dimen>
+    <dimen name="home_text_xl">40sp</dimen>
+    
+</resources>
