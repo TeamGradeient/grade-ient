@@ -40,14 +40,21 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="edu.ou.gradeient.MainActivity" />
         </activity>
-        
+
         <provider
-            android:name=".TaskProvider"
+            android:name="edu.ou.gradeient.TaskProvider"
             android:authorities="edu.ou.gradeient"
             android:exported="false" >
         </provider>
 
+        <activity
+            android:name="edu.ou.gradeient.TaskSummaryView"
+            android:label="@string/title_activity_task_summary_view"
+            android:parentActivityName="edu.ou.gradeient.MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="edu.ou.gradeient.MainActivity" />
+        </activity>
     </application>
-    
 
 </manifest>
