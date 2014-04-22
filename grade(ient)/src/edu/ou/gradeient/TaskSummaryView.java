@@ -26,10 +26,7 @@ public class TaskSummaryView extends Activity {
 		
 		if (savedInstanceState == null) {
 			setTaskFromIntent();
-			
-		}
-		
-		else {
+		} else {
 			try {
 				task =(Task)savedInstanceState.getSerializable(TASK_OBJ);
 			} catch (Exception ex) {
@@ -45,8 +42,6 @@ public class TaskSummaryView extends Activity {
 		taskName.setText(task.getName());
 		subjectName.setText(task.getSubject());
 		dueDate.setText("Due Time Goes Here");
-		
-		
 	}
 
 		
@@ -59,77 +54,62 @@ public class TaskSummaryView extends Activity {
 	}
 	
 	private void setTaskFromIntent() {
-		
-
 		Bundle extras = getIntent().getExtras();
-		
 		if (extras == null) {
-			
 			throw new IllegalArgumentException("Must Specify Task ID");
-			
 		}
 		
 		long taskId = extras.getLong(Extras.TASK_ID, -1);
-		
 		if (taskId == -1) {
-			
 			throw new IllegalArgumentException("Must Specify a Task ID");
 		}
 		
-		Cursor cursor = getContentResolver().query(ContentUris.withAppendedId(Task.Schema.CONTENT_URI, taskId), null, null, null, null);
+		Cursor cursor = getContentResolver().query(
+				ContentUris.withAppendedId(Task.Schema.CONTENT_URI, taskId), 
+				null, null, null, null);
 		
 		try {
 			if (cursor.getCount() > 0) {
-				cursor.moveToNext();task = new Task(cursor);
+				cursor.moveToNext();
+				task = new Task(cursor);
 			}
 		} catch (Exception ex) {
 			Log.e(TAG, "Error reading task from database", ex);
-			
 			throw new IllegalArgumentException("Couldn't find requested Task ID");
-			
 		} finally {
 			cursor.close();
 		}
 		
 		if (task == null) {
-			
 			Log.w(TAG, "Couldn't find requested task ID" + taskId);
-			
 			throw new IllegalArgumentException("Couldn't find requested Task ID");
 		}
-	
-			
 	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
-		case android.R.id.home:
-			// This ID represents the Home or Up button. In the case of this
-			// activity, the Up button is shown. Use NavUtils to allow users
-			// to navigate up one level in the application structure. For
-			// more details, see the Navigation pattern on Android Design:
-			//
-			// http://developer.android.com/design/patterns/navigation.html#up-vs-back
-			//
-			NavUtils.navigateUpFromSameTask(this);
-			
-			return true;
-			
-		case R.id.action_discard://Show pop-up dialogue here. Ask if they want to delete.
-			//If they say yes:
-			getContentResolver().delete(ContentUris.withAppendedId(Task.Schema.CONTENT_URI, task.getId()), null, null);
-			
-			finish();
-			
-			return true;
-			
-		case R.id.action_edit:
-	
+			case android.R.id.home:
+				// This ID represents the Home or Up button. In the case of this
+				// activity, the Up button is shown. Use NavUtils to allow users
+				// to navigate up one level in the application structure. For
+				// more details, see the Navigation pattern on Android Design:
+				//
+				// http://developer.android.com/design/patterns/navigation.html#up-vs-back
+				NavUtils.navigateUpFromSameTask(this);
+				return true;
+				
+			case R.id.action_discard://Show pop-up dialogue here. Ask if they want to delete.
+				//If they say yes:
+				getContentResolver().delete(
+						ContentUris.withAppendedId(Task.Schema.CONTENT_URI, task.getId()), 
+						null, null);
+				finish();
+				return true;
+				
+			case R.id.action_edit:
+				
 		}
-		
-		
-			
 		return super.onOptionsItemSelected(item);
 	}
 
@@ -138,5 +118,4 @@ public class TaskSummaryView extends Activity {
 		super.onSaveInstanceState(outState);
 		outState.putSerializable(TASK_OBJ, task);
 	}
-	
 }
