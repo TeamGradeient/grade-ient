@@ -2,8 +2,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/drawer_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" 
-    tools:context=".HomeScreenActivity">
+    android:layout_height="match_parent"
+    tools:context=".HomeScreenActivity" >
 
     <LinearLayout
         android:id="@+id/home_overview_layout"
@@ -20,30 +20,30 @@
     mean match the content's height.)
         -->
 
+
+        <!-- Date row -->
+
         <LinearLayout
-            android:id="@+id/home_date_and_time"
+            android:id="@+id/home_date_row"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="0"
-            android:background="#73737B"
+            android:background="#888888"
             android:orientation="vertical"
             android:padding="@dimen/home_padding" >
-
-            <TextView
-                android:id="@+id/home_time_and_day"
-                style="@style/home_text_m"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" >
-            </TextView>
 
             <TextView
                 android:id="@+id/home_date"
                 style="@style/home_text_xl"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:paddingLeft="14dp" >
-            </TextView>
+                android:ellipsize="end"
+                android:singleLine="true"
+                android:text="@string/sample_date" />
+            <!-- android:paddingLeft="14dp" -->
         </LinearLayout>
+
+        <!-- Up next/go to calendar view row -->
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -54,9 +54,9 @@
             android:paddingBottom="@dimen/home_padding"
             android:paddingTop="@dimen/home_padding" >
 
-            <!-- this row will expand in the layout when you put more things in it -->
+            <!-- Up next: background and text -->
 
-            <LinearLayout
+            <RelativeLayout
                 android:id="@+id/home_next_task"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
@@ -65,15 +65,39 @@
                 android:background="@color/holo_orange_light"
                 android:padding="@dimen/home_padding" >
 
-                <!-- android:layout_width="wrap_content" -->
+                <TextView
+                    android:id="@+id/home_next_now"
+                    style="@style/home_text_s"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:layout_alignParentTop="true"
+                    android:paddingBottom="2dp"
+                    android:paddingEnd="4dp"
+                    android:text="@string/home_next_now" />
+
+                <TextView
+                    android:id="@+id/home_next_priority"
+                    style="@style/home_text_xs"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignBaseline="@id/home_next_now"
+                    android:layout_toEndOf="@id/home_next_now"
+                    android:ellipsize="end"
+                    android:singleLine="true"
+                    android:text="@string/home_next_definitely" />
 
                 <TextView
                     android:id="@+id/home_next_task_title"
                     style="@style/home_text_l"
                     android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" >
-                </TextView>
-            </LinearLayout>
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/home_next_now"
+                    android:maxLines="2"
+                    android:text="@string/home_next_task" />
+            </RelativeLayout>
+
+            <!-- Go to calendar view: background, text, button -->
 
             <RelativeLayout
                 android:id="@+id/home_goto_calendar_button"
@@ -92,18 +116,18 @@
                     android:layout_height="wrap_content"
                     android:lines="3"
                     android:text="@string/home_goto_calendar_label"
-                    android:textColor="@android:color/white" >
-                </TextView>
+                    android:textColor="@android:color/white" />
 
                 <ImageView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_alignBottom="@id/home_goto_calendar_button_label"
                     android:layout_alignParentRight="true"
-                    android:src="@drawable/ic_action_forward" >
-                </ImageView>
+                    android:src="@drawable/ic_action_forward" />
             </RelativeLayout>
         </LinearLayout>
+
+        <!-- Work times list -->
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -124,9 +148,12 @@
                 android:id="@+id/upcoming_work"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
+                android:animateLayoutChanges="true"
                 android:drawSelectorOnTop="false"
                 android:orientation="vertical" />
         </LinearLayout>
+
+        <!-- Tasks list -->
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -152,14 +179,18 @@
         </LinearLayout>
     </LinearLayout>
 
+    <!-- Nav drawer -->
+
     <ListView
         android:id="@+id/nav_drawer"
         android:layout_width="@dimen/nav_drawer_width"
         android:layout_height="match_parent"
         android:layout_gravity="start"
         android:background="@color/white"
-        android:choiceMode="singleChoice"
-        android:divider="@android:color/transparent"
+        android:choiceMode="singleChoice" />
+    <!--
+             android:divider="@android:color/transparent"
         android:dividerHeight="0dp" />
+    -->
 
 </android.support.v4.widget.DrawerLayout>

@@ -129,7 +129,8 @@ public class CalendarView extends View {
 			while (CalendarActivity.tasks != null &&
 					CalendarActivity.tasks.moveToNext()) {
 				try {
-					Task t = new Task(CalendarActivity.tasks);
+					//TODO add work times
+					Task t = new Task(CalendarActivity.tasks, null);
 					taskMap.put(t.getId(), t);
 				} catch (Exception ex) {
 					Log.w(TAG, "While getting tasks: " + ex);

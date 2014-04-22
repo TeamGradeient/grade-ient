@@ -7,6 +7,7 @@ import org.joda.time.MutableInterval;
 import org.joda.time.chrono.ISOChronology;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.DateTimeFormatterBuilder;
 
 import android.text.format.DateFormat;
 
@@ -16,10 +17,18 @@ import android.text.format.DateFormat;
 public class TimeUtils {
 	private static final DateTimeFormatter MONTH_DAY_NUMERIC =
 			DateTimeFormat.forPattern("M/d");
-	private static final DateTimeFormatter TIME_FORMATTER =
+	private static final DateTimeFormatter TIME_HOUR_MIN_AM =
 			DateTimeFormat.forPattern("h:mma");
-	private static final DateTimeFormatter TIME_24_FORMATTER =
+	private static final DateTimeFormatter TIME_HOUR_MIN_24_HOUR =
 			DateTimeFormat.forPattern("HH:mm");
+	private static final DateTimeFormatter WEEKDAY_MONTH_DAY =
+			new DateTimeFormatterBuilder().appendDayOfWeekText()
+			.appendLiteral(", ").appendMonthOfYearShortText().appendPattern(". d")
+			.toFormatter();
+	private static final DateTimeFormatter WEEKDAY_MONTH_DAY_SHORT =
+			new DateTimeFormatterBuilder().appendDayOfWeekShortText()
+			.appendLiteral("., ").appendMonthOfYearShortText().appendPattern(". d")
+			.toFormatter();
 	private static final ISOChronology chron = ISOChronology.getInstance();
 	//TODO will break with time zones
 	private static long todayEnd = 0;
@@ -45,8 +54,8 @@ public class TimeUtils {
 	/** Returns 12-hour time with am/pm or 24-hour time, as appropriate. */
 	public static String formatTime(long millis) {
 		if (DateFormat.is24HourFormat(GradeientApp.getAppContext()))
-			return TIME_24_FORMATTER.print(millis);
-		return TIME_FORMATTER.print(millis).toLowerCase();
+			return TIME_HOUR_MIN_24_HOUR.print(millis);
+		return TIME_HOUR_MIN_AM.print(millis).toLowerCase();
 	}
 	
 	/** Returns "today", "tomorrow", or a m/d date. */
@@ -57,6 +66,16 @@ public class TimeUtils {
 		if (millis <= tomorrowEnd)
 			return "tomorrow";
 		return formatMonthDayNumeric(millis);
+	}
+	
+	/** Returns date in format Wednesday, Sept. 20 */
+	public static String formatWeekdayMonthDay(long millis) {
+		return WEEKDAY_MONTH_DAY.print(millis);
+	}
+	
+	/** Returns date in format Wed., Sept. 20 */
+	public static String formatWeekdayMonthDayShorter(long millis) {
+		return WEEKDAY_MONTH_DAY_SHORT.print(millis);
 	}
 	
 	/**

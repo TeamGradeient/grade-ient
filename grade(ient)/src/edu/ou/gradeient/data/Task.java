@@ -20,7 +20,6 @@ import android.provider.BaseColumns;
 
 /**
  * Represents a Task.
- * TODO ADD EVERYTHING ABOUT WORK TIMES. EEEEEEEVERYTHIIIIIIIIIIIIIING.
  * TODO work time support, correct time zone support,
  * check if it's efficient enough
  */
@@ -116,7 +115,7 @@ public class Task implements Comparable<Task>, Serializable
 			new TreeSet<TaskWorkInterval>();
 	
 	/**
-	 * Creates a default task with the name given.
+	 * Creates a task with the name, start, and end given.
 	 * @param name The name of the task. Must not be null.
 	 * @throws IllegalArgumentException if name is null or if start or end
 	 * is invalid
@@ -135,6 +134,10 @@ public class Task implements Comparable<Task>, Serializable
 	}
 	
 	/**
+	 * 
+	 */
+	
+	/**
 	 * Copy constructor
 	 * @param other Task to copy
 	 */
@@ -151,14 +154,16 @@ public class Task implements Comparable<Task>, Serializable
 	 * Creates a Task from a cursor. Assumes the cursor is already pointing
 	 * to the correct row.
 	 * TODO is this even a correct place to put this?
-	 * @param cursor A cursor for the Task table in the database
+	 * @param taskCursor A cursor for the Task table in the database
+	 * @param workCursor A cursor for the work times for this task
+	 * (can be null)
 	 * @throws IllegalArgumentException if a value found in the database
 	 * was illegal or the cursor was null
 	 * @throws NumberFormatException if a value that was supposed to be a 
 	 * number was not actually a number
 	 */
-	public Task (Cursor cursor) {
-		if (cursor == null)
+	public Task (Cursor taskCursor, Cursor workCursor) {
+		if (taskCursor == null)
 			throw new IllegalArgumentException("cursor must not be null");
 		
 		// Get all the values as strings and parse them here, so that we can
@@ -166,19 +171,22 @@ public class Task implements Comparable<Task>, Serializable
 		// (The implementation of getLong, getInt, etc. is in CursorWindow,
 		// which calls native methods to parse the values and does unhelpful
 		// things like returning 0 on error.)
-		id = Long.parseLong(cursor.getString(Schema.COL_ID));
-		setName(cursor.getString(Schema.COL_NAME));
-		setSubject(cursor.getString(Schema.COL_SUBJECT_NAME));
-		setNotes(cursor.getString(Schema.COL_NOTES));
+		id = Long.parseLong(taskCursor.getString(Schema.COL_ID));
+		setName(taskCursor.getString(Schema.COL_NAME));
+		setSubject(taskCursor.getString(Schema.COL_SUBJECT_NAME));
+		setNotes(taskCursor.getString(Schema.COL_NOTES));
 		
 		// Options for is done are 0 or 1. In the odd case that something else
 		// is stored, default to false.
-		String doneStr = cursor.getString(Schema.COL_IS_DONE);
+		String doneStr = taskCursor.getString(Schema.COL_IS_DONE);
 		isDone = (doneStr == null ? false : doneStr.equals("1"));
 		
-		long start = Long.parseLong(cursor.getString(Schema.COL_START_INSTANT));
-		long end = Long.parseLong(cursor.getString(Schema.COL_END_INSTANT));
+		long start = Long.parseLong(taskCursor.getString(Schema.COL_START_INSTANT));
+		long end = Long.parseLong(taskCursor.getString(Schema.COL_END_INSTANT));
 		taskInterval = new MutableInterval(start, end);
+		
+		if (workCursor != null)
+			setWorkIntervals(workCursor, true);
 	}
 	
 	/**

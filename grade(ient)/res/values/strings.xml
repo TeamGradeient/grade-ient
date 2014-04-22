@@ -7,7 +7,6 @@
     <string name="view_task">View Tasks</string>
     <string name="add_task">Add Task</string>
     <string name="title_activity_task_view">Tasks</string>
-    <string name="welcome_message">Welcome to grade(ient)! :)</string>
 
     <!-- Edit task -->
     <string name="title_activity_edit_task">Edit Task</string>
@@ -20,13 +19,22 @@
     <string name="action_accept_add_task">Confirm changes</string>
     <string name="action_cancel_add_task">Cancel changes</string>
     
+    <!-- Calendar view -->
     <string name="action_calendar_go_to_now">Go to now</string>
+    
+    <!-- Home screen -->
     <string name="title_activity_home_screen">grade(ient)</string>
-    <string name="hello_world">Hello world!</string>
-    <string name="home_goto_calendar_label">Go to calendar view</string>
+    <string name="home_goto_calendar_label">Go to calendar</string>
 	<string name="action_task_list">Task list</string>
+	<string name="calendar_view">Calendar view</string>
 	<string name="next_work_times">Next work times</string>
 	<string name="next_tasks_due">Next tasks due</string>
+	<string name="sample_date">Wednesday, Sept. 20</string>
+	<string name="open_drawer">Open drawer</string>
+	<string name="close_drawer">Close drawer</string>
+	<string name="home_next_now">Now:</string>
+	<string name="home_next_definitely">definitely work on</string>
+	<string name="home_next_maybe">definitely work on</string>
+	<string name="home_next_task">Next task name</string>
 	
-	<string name="calendar_view">Calendar view</string>
 </resources>

@@ -48,20 +48,6 @@ public class EditTaskActivity extends Activity {
 	private Task task;
 	private int taskStatus;
 	
-	/** Options for task status to be passed in bundle */
-	public interface TaskStatus {
-		public static final int NEW_TASK = 0;
-		public static final int EDIT_TASK = 1;
-	}
-	
-	/** Options for things to pass in bundle */
-	public interface Extras {
-		public static final String TASK_STATUS = "edu.ou.gradeient.TASK_STATUS";
-		public static final String TASK_ID = "edu.ou.gradeient.TASK_ID";
-	}
-	
-	private static final String TASK_OBJ = "edu.ou.gradeient.TASK_OBJ";
-	
 	/* This class is used to update the time buttons. 
 	 * (from Android Calendar's com.android.calendar.event.EditEventView) */
 	private class TimeListener implements OnTimeSetListener {
@@ -221,19 +207,19 @@ public class EditTaskActivity extends Activity {
 		// Figure out if the user requested to add or edit a task
 		Bundle extras = getIntent().getExtras();
 		if (extras == null) {
-			taskStatus = TaskStatus.NEW_TASK;
+			taskStatus = Extras.TaskStatus.NEW_TASK;
 			return;
 		}
 			
 		// Get the new/edit status, if specified
 		taskStatus = extras.getInt(Extras.TASK_STATUS, -1);
 		if (taskStatus == -1)
-			taskStatus = TaskStatus.NEW_TASK;
+			taskStatus = Extras.TaskStatus.NEW_TASK;
 		// Get the ID, if specified. (Default to NEW_TASK_ID.)
 		long taskId = extras.getLong(Extras.TASK_ID, Task.NEW_TASK_ID);
 
 		// If we're supposed to edit a task, get its Task object by ID.
-		if (taskStatus == TaskStatus.EDIT_TASK) {
+		if (taskStatus == Extras.TaskStatus.EDIT_TASK) {
 			if (taskId == Task.NEW_TASK_ID) {
 				Log.e(TAG, "Requested editing a task with ID NEW_TASK_ID.");
 			} else {
@@ -248,7 +234,7 @@ public class EditTaskActivity extends Activity {
 					if (cursor.getCount() > 0) {
 						cursor.moveToNext();
 						// Try to make a Task object from the cursor row
-						task = new Task(cursor);
+						task = new Task(cursor, null); //TODO add work times
 					}
 				} catch (Exception ex) {
 					Log.e(TAG, "Error reading task from database", ex);
@@ -261,7 +247,7 @@ public class EditTaskActivity extends Activity {
 				// This is bad but not fatal. Create a new task instead.
 				if (task == null) {
 					Log.w(TAG, "Couldn't find requested task ID " + taskId);
-					taskStatus = TaskStatus.NEW_TASK;
+					taskStatus = Extras.TaskStatus.NEW_TASK;
 				}
 			}
 		}
@@ -278,10 +264,10 @@ public class EditTaskActivity extends Activity {
 		}
 		taskStatus = savedInstanceState.getInt(Extras.TASK_STATUS);
 		try {
-			task = (Task)savedInstanceState.getSerializable(TASK_OBJ);
+			task = (Task)savedInstanceState.getSerializable(Extras.TASK_OBJ);
 		} catch (ClassCastException ex) {
 			Log.w(TAG, "Task could not be de-serialized.");
-			taskStatus = TaskStatus.NEW_TASK;
+			taskStatus = Extras.TaskStatus.NEW_TASK;
 		}
 	}
 	
@@ -367,12 +353,12 @@ public class EditTaskActivity extends Activity {
 				// the object in the database.
 				fillTaskNonDateFields();
 				switch (taskStatus) {
-					case TaskStatus.NEW_TASK:
+					case Extras.TaskStatus.NEW_TASK:
 						getContentResolver().insert(
 								Task.Schema.CONTENT_URI, 
 								task.toContentValues());
 						break;
-					case TaskStatus.EDIT_TASK:
+					case Extras.TaskStatus.EDIT_TASK:
 						getContentResolver().update(
 								ContentUris.withAppendedId(
 										Task.Schema.CONTENT_URI, task.getId()),
@@ -398,6 +384,6 @@ public class EditTaskActivity extends Activity {
 		// Save the task status
 		outState.putInt(Extras.TASK_STATUS, taskStatus);
 		// Save a serialized Task object
-		outState.putSerializable(TASK_OBJ, task);
+		outState.putSerializable(Extras.TASK_OBJ, task);
 	}
 }

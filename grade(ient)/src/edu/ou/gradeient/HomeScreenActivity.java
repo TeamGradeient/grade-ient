@@ -2,18 +2,19 @@ package edu.ou.gradeient;
 
 import java.util.ArrayList;
 
-import edu.ou.gradeient.data.Task;
-import edu.ou.gradeient.data.TaskWorkInterval;
+import org.joda.time.DateTime;
+
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.LoaderManager;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
-import android.graphics.Color;
 import android.os.Bundle;
+import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.widget.DrawerLayout;
-import android.text.format.DateUtils;
+import android.text.Layout;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -23,14 +24,15 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
+import edu.ou.gradeient.data.Task;
+import edu.ou.gradeient.data.TaskWorkInterval;
 
 public class HomeScreenActivity extends Activity 
 		implements LoaderManager.LoaderCallbacks<Cursor>{
 
 	private static final String TAG = "HomeScreenActivity";
-	private static final int EDIT_REQUEST = 2;
-	private static final int TASK_LIST = 0;
-	private static final int CALENDAR_ITEM = 1;
+	private static final int DRAWER_ITEM_TASK_LIST = 0;
+	private static final int DRAWER_ITEM_CALENDAR = 1;
 	
 	// These are the columns to get from the database for each view
 	private static final String[] TASK_LOADER_COLUMNS = { Task.Schema._ID,
@@ -40,61 +42,55 @@ public class HomeScreenActivity extends Activity
 	// ID for the loader for each view
 	private static final int TASK_LOADER_ID = 1;
 	private static final int WORK_LOADER_ID = 2;
+	private static final int NEXT_WORK_LOADER_ID = 3;
 	// SimpleCursorAdapter for each view to display the data in the lists
 	private SimpleCursorAdapter taskAdapter;
 	private SimpleCursorAdapter workAdapter;
-	/** Callbacks to interact with the LoaderManager */
-	private LoaderManager.LoaderCallbacks<Cursor> callbacks;
-	
-	/**DrawerLayout to hold the slide-out drawer*/
-	private DrawerLayout drawerLayout;
-	
-	/**ListView to put inside drawer*/
-	private ListView drawerList;
-	
-	/**Adapter to hold string array for drawer items*/
-	private ArrayAdapter<String> drawerAdapter;
-	
-	/**ArrayList of strings for drawer items*/
-	private ArrayList<String> drawerItems;
+	// For the 
+	// Register for LoaderManager notifications
+	private LoaderManager.LoaderCallbacks<Cursor> callbacks = this;
 	
 	/** request to add task */
 	private static final int ADD_REQUEST = 1;
+
+	/** DrawerLayout to hold the slide-out drawer */
+	private DrawerLayout drawerLayout;
+	/** ListView to put inside drawer */
+	private ListView drawerList;
+	/** Adapter to hold string array for drawer items */
+	private ArrayAdapter<String> drawerAdapter;
+	/** ArrayList of strings for drawer items */
+	private ArrayList<String> drawerItems;
+	
+	private TextView weekdayMonthDate;
+	private TextView nextWorkPriority;
+	private TextView nextWorkTitle;
+	private ListView upcomingTasks;
+	private ListView upcomingWork;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home_screen);
-//		ActionBar actionBar = getActionBar();
-//		actionBar.setTitle(R.string.app_name);
-//		actionBar.setDisplayShowTitleEnabled(true);
+		ActionBar actionBar = getActionBar();
+		actionBar.setTitle(R.string.app_name);
+		actionBar.setDisplayShowTitleEnabled(true);
+		actionBar.setDisplayHomeAsUpEnabled(true);
+		//TODO requires min API level 14? (probably solvable by using
+		// support activity
+//		actionBar.setHomeButtonEnabled(true);
 		
-		/*------------display time and date------------*/
-		//Date
-		TextView dateAndYear = (TextView) findViewById(R.id.home_date);
-		int dateFlags = DateUtils.FORMAT_SHOW_DATE;
-		dateFlags |= DateUtils.FORMAT_SHOW_YEAR;
-		String date = DateUtils.formatDateTime(this,
-				System.currentTimeMillis(), dateFlags);
-		dateAndYear.setText(date);
-		dateAndYear.setTextColor(Color.WHITE);
+		weekdayMonthDate = (TextView) findViewById(R.id.home_date);
+		nextWorkPriority = (TextView)findViewById(R.id.home_next_priority);
+		nextWorkTitle = (TextView) findViewById(R.id.home_next_task_title);
+		upcomingWork = (ListView)findViewById(R.id.upcoming_work);		
+		upcomingTasks = (ListView)findViewById(R.id.upcoming_tasks);
+		drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+		drawerList = (ListView) findViewById(R.id.nav_drawer);
 		
-		//Time, and weekday
-		//TODO FunTimes/joda-time methods
-		TextView timeAndDay = (TextView) findViewById(R.id.home_time_and_day);
-		//int timeFlags = DateUtils.FORMAT_12HOUR;
-		int timeFlags = DateUtils.FORMAT_SHOW_TIME;
-		timeFlags |= DateUtils.FORMAT_SHOW_WEEKDAY;
-		timeAndDay.setText(DateUtils.formatDateTime(this, 
-				System.currentTimeMillis(), timeFlags));
-		timeAndDay.setTextColor(Color.WHITE);
-		
-		
-		/*---------------display next task---------------*/
-		TextView nextTaskTitle = (TextView) findViewById(R.id.home_next_task_title);
-		nextTaskTitle.setText("Essay 3");
-
 		// set up CursorAdapters
+		
+		// mappings from view IDs to column names
 		int[] viewIds = { R.id.list_subject, R.id.list_name,
 				R.id.list_date, R.id.list_time };
 		String[] workColumns = { Task.Schema.SUBJECT_NAME, Task.Schema.NAME,
@@ -113,7 +109,6 @@ public class HomeScreenActivity extends Activity
 				v.setText(text);
 			}
 		};
-		ListView upcomingWork = (ListView)findViewById(R.id.upcoming_work);		
 		upcomingWork.setAdapter(workAdapter);
 		
 		String[] taskColumns = { Task.Schema.SUBJECT_NAME, Task.Schema.NAME,
@@ -129,23 +124,14 @@ public class HomeScreenActivity extends Activity
 				v.setText(text);
 			}
 		};
-		ListView upcomingTasks = (ListView)findViewById(R.id.upcoming_tasks);
 		upcomingTasks.setAdapter(taskAdapter);
-
 		//Add a listener that will be called when an upcoming task is clicked
 		upcomingTasks.setOnItemClickListener(new TaskItemClickListener());
+		
+		// Load things into the view
+		updateView();
 
-		// register for notifications and init loaders
-		callbacks = this;
-		getLoaderManager().initLoader(TASK_LOADER_ID, null, callbacks);
-		getLoaderManager().initLoader(WORK_LOADER_ID, null, callbacks);
-		
-		
-		/*--------------Slide-out drawer--------------*/
-		drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
-		drawerList = (ListView) findViewById(R.id.nav_drawer);
-		
-		//Initialize ArrayList of strings
+		/*--------------Slide-out navigation drawer--------------*/
 		drawerItems = new ArrayList<String>();
 		drawerItems.add(this.getResources().getString(R.string.action_task_list));
 		drawerItems.add(this.getResources().getString(R.string.calendar_view));
@@ -156,7 +142,41 @@ public class HomeScreenActivity extends Activity
 				drawerItems);
 		drawerList.setAdapter(drawerAdapter);
 		drawerList.setOnItemClickListener(new DrawerItemClickListener());
-		
+		ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout,
+                R.drawable.ic_drawer, R.string.open_drawer, R.string.close_drawer) {
+
+            /** Called when a drawer has settled in a completely closed state. */
+            public void onDrawerClosed(View view) {
+                super.onDrawerClosed(view);
+                // can call getActionBar().setTitle(regular title) here
+                // if title changes
+                invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+            }
+
+            /** Called when a drawer has settled in a completely open state. */
+            public void onDrawerOpened(View drawerView) {
+                super.onDrawerOpened(drawerView);
+                // can call getActionBar().setTitle(contextual title) here
+                // if title changes
+                invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+            }
+        };
+        drawerLayout.setDrawerListener(toggle);
+	}
+	
+	private void updateView() {
+		long time = System.currentTimeMillis();
+		weekdayMonthDate.setText(TimeUtils.formatWeekdayMonthDay(time));
+		// make sure date is not ellipsized
+		Layout layout = weekdayMonthDate.getLayout();
+		if (layout != null && layout.getEllipsisCount(0) != 0) {
+			// use a shorter format if date was ellipsized
+			weekdayMonthDate.setText(TimeUtils.formatWeekdayMonthDayShorter(time));
+		}
+		// re-init loaders
+		getLoaderManager().restartLoader(TASK_LOADER_ID, null, callbacks);
+		getLoaderManager().restartLoader(WORK_LOADER_ID, null, callbacks);
+		getLoaderManager().restartLoader(NEXT_WORK_LOADER_ID, null, callbacks);
 	}
 
 	public void startCalendarActivity(View view)
@@ -183,8 +203,8 @@ public class HomeScreenActivity extends Activity
 				// Start an intent to add a task
 				Intent intent = new Intent(this, EditTaskActivity.class);
 				// Indicate that this is a new task
-				intent.putExtra(EditTaskActivity.Extras.TASK_STATUS, 
-						EditTaskActivity.TaskStatus.NEW_TASK);
+				intent.putExtra(Extras.TASK_STATUS, 
+						Extras.TaskStatus.NEW_TASK);
 				startActivityForResult(intent, -1);
 				return true;
 			case R.id.action_task_list:
@@ -196,6 +216,15 @@ public class HomeScreenActivity extends Activity
 		return super.onOptionsItemSelected(item);
 	}
 	
+	// Called whenever we call invalidateOptionsMenu() 
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        // If the nav drawer is open, hide action items related to the content view
+        boolean drawerOpen = drawerLayout.isDrawerOpen(drawerList);
+        menu.findItem(R.id.action_add_task).setVisible(!drawerOpen); //TODO others?
+        return super.onPrepareOptionsMenu(menu);
+    }
+	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, 
 			Intent data) {
@@ -204,7 +233,7 @@ public class HomeScreenActivity extends Activity
 				// Go to the calendar view
 				//TODO is that what we want to do?
 				//TODO eventually we will want to set up an extra in the intent
-				// to scroll to the task start date
+				// to scroll to the task start date (Extras.SCROLL_TO)
 				startActivity(new Intent(this, CalendarActivity.class));
 				break;
 			default:
@@ -215,15 +244,27 @@ public class HomeScreenActivity extends Activity
 
 	@Override
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+		// Display tasks and work times in the next two weeks
+		long now = System.currentTimeMillis();
+		long later = new DateTime(now).plusWeeks(2).getMillis();
 		switch (id) {
 			case TASK_LOADER_ID:
-				return new CursorLoader(this, Task.Schema.CONTENT_URI,
+				return new CursorLoader(this, 
+						Task.Schema.getUriForRange(now, later),
 						TASK_LOADER_COLUMNS, null, null, null);
 			case WORK_LOADER_ID:
 				return new CursorLoader(this, 
-						TaskWorkInterval.Schema.getUriForAwesome(
-								System.currentTimeMillis()),
+						TaskWorkInterval.Schema.getUriForRangeHybrid(now, later),
 						WORK_LOADER_COLUMNS, null, null, null);
+			case NEXT_WORK_LOADER_ID:
+				// For some reason, there's not a limit parameter for 
+				// CursorLoaders or ContentProviders, so you have to tack on
+				// the limit to the sort order since that's where it would be
+				// in a raw SQL query...
+				return new CursorLoader(this,
+						TaskWorkInterval.Schema.getUriForRangeHybrid(now, later),
+						WORK_LOADER_COLUMNS, null, null, 
+						TaskWorkInterval.Schema.SORT_ORDER_DEFAULT_HYBRID + " LIMIT 1");
 			default:
 				throw new IllegalArgumentException("Unknown id: " + id);
 		}
@@ -237,62 +278,35 @@ public class HomeScreenActivity extends Activity
 			// available for use. Only now can we associate the queried 
 			// Cursor with the SimpleCursorAdapter.
 			case TASK_LOADER_ID:
-				Log.i(TAG, "got data: " + data.getCount());
 				taskAdapter.swapCursor(data);
 				break;
 			case WORK_LOADER_ID:
 				workAdapter.swapCursor(data);
 				break;
+			case NEXT_WORK_LOADER_ID:
+				data.moveToNext();
+				TaskWorkInterval twi;
+				try {
+					twi = TaskWorkInterval.hybridWorkInterval(data);
+				} catch (Exception ex) {
+					Log.w(TAG, "Illegal value in database: " + ex);
+					break;
+				}
+				nextWorkTitle.setText(twi.getTaskName());
+				nextWorkPriority.setText(twi.isCertain() ? 
+						getResources().getString(R.string.home_next_definitely)
+						: getResources().getString(R.string.home_next_maybe));
+				//TODO we actually need another field (the design includes
+				// the task's due date, and we might also want to show the
+				// subject somehow) and a way to handle what to show when 
+				// the current time is not actually a work time
+				break;
 			default:
 				throw new IllegalArgumentException("Unknown id: " + id);
 		}
-		// The listview now displays the queried data.
+		// The old cursors will be closed automatically.
 	}
 	
-	//Provides a listener to start editing a task when an item is clicked on in the
-	//next tasks area.
-	private class TaskItemClickListener 
-	implements AdapterView.OnItemClickListener
-	{
-		@Override
-		public void onItemClick(AdapterView<?> adapterView, View view,
-				int position, long id) 
-		{
-			System.out.println("Task " + id + " clicked!");
-
-			Intent intent = new Intent(adapterView.getContext(), EditTaskActivity.class);
-			// Indicate that this is an existing task to edit
-			intent.putExtra(EditTaskActivity.Extras.TASK_STATUS,
-					EditTaskActivity.TaskStatus.EDIT_TASK);
-			// Indicate that it is the task with the given ID that should be edited
-			intent.putExtra(EditTaskActivity.Extras.TASK_ID, id);
-			startActivity(intent);
-		}
-	}
-	
-	private class DrawerItemClickListener implements ListView.OnItemClickListener
-	{
-		@Override
-		public void onItemClick(AdapterView<?> adapterView, View view, int position,
-				long id) 
-		{
-			switch(position)
-			{
-				case TASK_LIST:
-					startTaskListActivity(view);
-					break;
-				case CALENDAR_ITEM:
-					startCalendarActivity(view);
-					break;
-				default:
-					Log.e(TAG, "This task was not recognized!");
-					break;
-			}
-			drawerLayout.closeDrawer(drawerList);
-		}
-		
-	}
-
 	@Override
 	public void onLoaderReset(Loader<Cursor> loader) {
 		int id = loader.getId();
@@ -304,15 +318,54 @@ public class HomeScreenActivity extends Activity
 				taskAdapter.swapCursor(null); break;
 			case WORK_LOADER_ID:
 				workAdapter.swapCursor(null); break;
+			case NEXT_WORK_LOADER_ID:
+				nextWorkTitle.setText("");
+				nextWorkPriority.setText("");
+				break;
 			default:
 				throw new IllegalArgumentException("Unknown id: " + id);
+		}
+	}
 
-//		@Override
-//		public void onItemClick(AdapterView<?> arg0, View arg1, int arg2,
-//				long arg3) {
-//			// TODO Auto-generated method stub
-//			
-//		}
+	/** Provides a listener to start editing a task when an item is 
+	 * clicked on in the next tasks area. */
+	private class TaskItemClickListener implements AdapterView.OnItemClickListener
+	{
+		@Override
+		public void onItemClick(AdapterView<?> adapterView, View view,
+				int position, long id) 
+		{
+			System.out.println("Task " + id + " clicked!");
+
+			Intent intent = new Intent(adapterView.getContext(), EditTaskActivity.class);
+			// Indicate that this is an existing task to edit
+			intent.putExtra(Extras.TASK_STATUS, Extras.TaskStatus.EDIT_TASK);
+			// Indicate that it is the task with the given ID that should be edited
+			intent.putExtra(Extras.TASK_ID, id);
+			startActivity(intent);
+		}
+	}
+	
+	/** Handles nav drawer item clicks */
+	private class DrawerItemClickListener implements ListView.OnItemClickListener
+	{
+		@Override
+		public void onItemClick(AdapterView<?> adapterView, View view, int position,
+				long id) 
+		{
+			switch(position)
+			{
+				case DRAWER_ITEM_TASK_LIST:
+					startTaskListActivity(view);
+					break;
+				case DRAWER_ITEM_CALENDAR:
+					startCalendarActivity(view);
+					break;
+				default:
+					Log.e(TAG, "This task was not recognized!");
+					break;
+			}
+			drawerLayout.closeDrawer(drawerList);
 		}
 	}
 }

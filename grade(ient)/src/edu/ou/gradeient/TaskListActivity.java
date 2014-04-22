@@ -28,6 +28,7 @@ import android.widget.AdapterView;
  */
 public class TaskListActivity extends ListActivity 
 		implements LoaderManager.LoaderCallbacks<Cursor> {
+	
 	private static final String TAG = "TaskListActivity";
 	
 	private static final int ADD_REQUEST = 1;
@@ -63,7 +64,6 @@ public class TaskListActivity extends ListActivity
 				viewIDs, 0) {
 			@Override
 			public void setViewText(TextView v, String text) {
-				//TODO does that equals method work?
 				//TODO is this a good formatting method or should we use
 				// Joda time? (the place where I got this code from mentioned
 				// something a hack being needed for time zone support)
@@ -138,10 +138,10 @@ public class TaskListActivity extends ListActivity
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		Intent intent = new Intent(this, EditTaskActivity.class);
 		// Indicate that this is an existing task to edit
-		intent.putExtra(EditTaskActivity.Extras.TASK_STATUS,
-				EditTaskActivity.TaskStatus.EDIT_TASK);
+		intent.putExtra(Extras.TASK_STATUS,
+				Extras.TaskStatus.EDIT_TASK);
 		// Indicate that it is the task with the given ID that should be edited
-		intent.putExtra(EditTaskActivity.Extras.TASK_ID, id);
+		intent.putExtra(Extras.TASK_ID, id);
 		startActivityForResult(intent, EDIT_REQUEST);
 	}
 	
@@ -180,8 +180,8 @@ public class TaskListActivity extends ListActivity
 	private void addTask() {
 		Intent intent = new Intent(this, EditTaskActivity.class);
 		// Indicate that this is a new task
-		intent.putExtra(EditTaskActivity.Extras.TASK_STATUS, 
-				EditTaskActivity.TaskStatus.NEW_TASK);
+		intent.putExtra(Extras.TASK_STATUS, 
+				Extras.TaskStatus.NEW_TASK);
 		startActivityForResult(intent, ADD_REQUEST);
 	}
 
@@ -189,7 +189,7 @@ public class TaskListActivity extends ListActivity
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
 		switch (id) {
 			case LOADER_ID:
-				// Create a new CursorLoader with the following query parameters.
+				// For now, get all the tasks, but only the columns specified.
 				return new CursorLoader(this, Task.Schema.CONTENT_URI,
 						COLUMNS, null, null, null);
 			default:

@@ -61,7 +61,7 @@ public class TaskProvider extends ContentProvider {
 		URI_MATCHER.addURI(AUTHORITY, "tasks/work_intervals/#", TASK_WORK_INTERVAL_ID);
 		URI_MATCHER.addURI(AUTHORITY, "tasks/work_intervals/task/#", TASK_WORK_INTERVALS_TASK_ID);
 		URI_MATCHER.addURI(AUTHORITY, "tasks/work_intervals/#/#", TASK_WORK_INTERVALS_DATES);
-		URI_MATCHER.addURI(AUTHORITY, "work_intervals_tasks/#", WORK_INTERVALS_TASKS);
+		URI_MATCHER.addURI(AUTHORITY, "work_intervals_tasks/#/#", WORK_INTERVALS_TASKS);
 //		URI_MATCHER.addURI(AUTHORITY, "subjects", SUBJECTS);
 //		URI_MATCHER.addURI(AUTHORITY, "subjects/#", SUBJECT_ID);
 //		URI_MATCHER.addURI(AUTHORITY, "semesters", SEMESTERS);
@@ -75,11 +75,18 @@ public class TaskProvider extends ContentProvider {
 					Task.Schema.END_INSTANT + ") "
 			+ "or (" + Task.Schema.START_INSTANT + " between ^1 and ^2)"
 			+ " or (" + Task.Schema.END_INSTANT + " between ^1 and ^2)";
-	private static final String WORK_INTERVALS_TASKS_WHERE =
-			TextUtils.expandTemplate("(^1 between ^2.^3 and ^2.^4) "
-					+ "or (^2.^3 > ^1)", "^1", TaskWorkInterval.Schema.TABLE,
-					TaskWorkInterval.Schema.START_INSTANT,
-					TaskWorkInterval.Schema.END_INSTANT).toString();
+	private static final String WORK_INTERVALS_TASKS_WHERE = TASK_DATES_WHERE
+			.replaceAll(Task.Schema.START_INSTANT, 
+					TaskWorkInterval.Schema.TABLE + "." + 
+							TaskWorkInterval.Schema.START_INSTANT)
+							.replaceAll(Task.Schema.END_INSTANT,
+									TaskWorkInterval.Schema.TABLE + "." +
+											TaskWorkInterval.Schema.END_INSTANT);
+//	private static final String WORK_INTERVALS_TASKS_WHERE =
+//			TextUtils.expandTemplate("(^1 between ^2.^3 and ^2.^4) "
+//					+ "or (^2.^3 > ^1)", "^1", TaskWorkInterval.Schema.TABLE,
+//					TaskWorkInterval.Schema.START_INSTANT,
+//					TaskWorkInterval.Schema.END_INSTANT).toString();
 	
 	@Override
 	public boolean onCreate() {
@@ -95,23 +102,22 @@ public class TaskProvider extends ContentProvider {
 	public Cursor query(Uri uri, String[] projection, String selection,
 			String[] selectionArgs, String sortOrder) {
 		SQLiteQueryBuilder builder = new SQLiteQueryBuilder();
-		String limit = null;
 		int uriMatch = URI_MATCHER.match(uri);
 		
 		// Get the start and end date segments of the URI if applicable
-		if (uriMatch == TASK_DATES || uriMatch == TASK_WORK_INTERVALS_DATES) {
+		if (uriMatch == TASK_DATES || uriMatch == TASK_WORK_INTERVALS_DATES
+				|| uriMatch == WORK_INTERVALS_TASKS) {
 			List<String> segments = uri.getPathSegments();
 			if (segments.size() < 2) // shouldn't happen, but check anyway
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
 			String start = segments.get(segments.size() - 2);
 			String end = segments.get(segments.size() - 1);
-			builder.appendWhereEscapeString(TextUtils.expandTemplate(
-					TASK_DATES_WHERE, start, end).toString());
-		}
-		// Or just the end date segment
-		else if (uriMatch == WORK_INTERVALS_TASKS) {
-			builder.appendWhere(TextUtils.expandTemplate(
-					WORK_INTERVALS_TASKS_WHERE, uri.getLastPathSegment()));
+			if (uriMatch == TASK_DATES || uriMatch == TASK_WORK_INTERVALS_DATES)
+				builder.appendWhereEscapeString(TextUtils.expandTemplate(
+						TASK_DATES_WHERE, start, end).toString());
+			else
+				builder.appendWhereEscapeString(TextUtils.expandTemplate(
+						WORK_INTERVALS_TASKS_WHERE, start, end).toString());
 		}
 		// In the case of most *_ID queries, limit to returning the one result 
 		// matching the requested ID.
@@ -140,10 +146,8 @@ public class TaskProvider extends ContentProvider {
 				break;
 			case WORK_INTERVALS_TASKS:
 				if (TextUtils.isEmpty(sortOrder))
-					sortOrder = TaskWorkInterval.Schema.TABLE + "." 
-							+ TaskWorkInterval.Schema.SORT_ORDER_DEFAULT;
+					sortOrder = TaskWorkInterval.Schema.SORT_ORDER_DEFAULT_HYBRID;
 				builder.setTables(TaskWorkInterval.Schema.TABLE_HYBRID);
-				limit = "20"; //TODO is this ok?
 				if (projection == null)
 					projection = TaskWorkInterval.Schema.COLUMNS_HYBRID;
 				break;
@@ -168,7 +172,7 @@ public class TaskProvider extends ContentProvider {
 		
 		SQLiteDatabase db = Database.getHelper().getReadableDatabase();
 		Cursor cursor = builder.query(db, projection, selection, selectionArgs,
-				null, null, sortOrder, limit);
+				null, null, sortOrder, null);
 		//TODO apparently if returning joins of tables, it might be better to
 		// use the general authority URI instead
 		cursor.setNotificationUri(getContext().getContentResolver(), uri);
@@ -226,7 +230,6 @@ public class TaskProvider extends ContentProvider {
 			return null;
 		}
 		Uri itemUri = ContentUris.withAppendedId(uri, id);
-		//TODO tutorial had check using nonexistant method isInBatchMode()
 		// Notify all listeners of changes
 		getContext().getContentResolver().notifyChange(itemUri, null);
 		return itemUri;
@@ -271,7 +274,6 @@ public class TaskProvider extends ContentProvider {
 //				table = Subject.Schema.TABLE; break;
 //			case SEMESTERS:
 //				table = Semester.Schema.TABLE; break;
-			//TODO should there be anything that's unsupported for updating?
 			default:
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
 		}
@@ -325,7 +327,6 @@ public class TaskProvider extends ContentProvider {
 //			case SEMESTERS:
 //				table = Semester.Schema.TABLE;
 //				break;
-			//TODO should there be anything that's unsupported for updating?
 			default:
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
 		}

@@ -6,7 +6,6 @@ import org.joda.time.DateTime;
 import org.joda.time.MutableInterval;
 import org.joda.time.ReadableInterval;
 
-import edu.ou.gradeient.TimeUtils;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -14,6 +13,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.BaseColumns;
 import android.text.TextUtils;
+import edu.ou.gradeient.TimeUtils;
 
 /**
  * Represents a work interval for a task.
@@ -85,7 +85,9 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 		}
 		
 		
-		
+		/** URI for list of hybrid work times/tasks. The only valid form is
+		 * <code>CONTENT_URI_HYBRID/#/##</code>, work times in range # to ##
+		 * (in milliseconds since epoch). */
 		public static final Uri CONTENT_URI_HYBRID = Uri.withAppendedPath(
 				TaskProvider.CONTENT_URI, "work_intervals_tasks");
 		/** MIME type for list of hybrid work times/tasks */
@@ -96,8 +98,10 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 		public static final String CONTENT_ITEM_TYPE_HYBRID = 
 				ContentResolver.CURSOR_ITEM_BASE_TYPE + 
 				"/vnd." + TaskProvider.AUTHORITY + "_work_intervals_tasks";
-		//TODO doc
-		public static Uri getUriForAwesome(long start) {
+		
+		/** Get a URI for hybrid work time/tasks in the given date range 
+		 * (in milliseconds since epoch) */
+		public static Uri getUriForRangeHybrid(long start, long end) {
 			return Uri.withAppendedPath(CONTENT_URI_HYBRID, start + ""); 
 		}
 		
@@ -106,12 +110,17 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 		static final String TABLE_HYBRID = TABLE + " inner join " 
 				+ Task.Schema.TABLE + " on " + TABLE + "." + TASK_ID + " = "
 				+ Task.Schema.TABLE + "." + Task.Schema._ID;
-		/** Columns for TABLE_JOIN */
+		
+		/** Columns for TABLE_HYBRID */
 		public static final String[] COLUMNS_HYBRID = { 
 			TABLE + "." + _ID, Task.Schema.TABLE + "." + Task.Schema.NAME,
 			Task.Schema.TABLE + "." + Task.Schema.SUBJECT_NAME, 
 			TABLE + "." + START_INSTANT, TABLE + "." + END_INSTANT, 
 			TABLE + "." + CERTAINTY };
+		
+		/** Default sort order for TABLE_HYBRID */
+		public static final String SORT_ORDER_DEFAULT_HYBRID = 
+				TABLE + "." + SORT_ORDER_DEFAULT;
 		
 		//TODO is this even the right way to do this?
 		private static final String PROJ_FMT = "^1.^2 as ^2";
@@ -132,13 +141,19 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 	public static final long NEW_ID = -1;
 	
 	/** Unique ID of the work interval */
-	private final long id;
+	private long id;
 	/** Task ID this work interval is for */
-	private final long taskId;
+	private long taskId;
 	/** Interval of this work interval */
 	private MutableInterval interval;
 	/** Certainty of work interval (false = maybe, true = definitely) */
 	private boolean isCertain;
+	/** Name of the task this work interval is for (will be null except for
+	 * special hybrid task/work interval objects) */
+	private String taskName;
+	/** Name of the subject this work interval is for (will be null except for
+	 * special hybrid task/work interval objects) */
+	private String subjectName;
 	
 	/**
 	 * Creates a new work interval with the given data.
@@ -187,6 +202,22 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 	
 	public long getTaskId() {
 		return taskId;
+	}
+	
+	/** 
+	 * Gets the name of the task this work interval is for, which will be null
+	 * unless the work interval was created with {@link #hybridWorkInterval}.
+	 */
+	public String getTaskName() {
+		return taskName;
+	}
+	
+	/**
+	 * Gets the name of the subject this work interval is for, which will be
+	 * null unless the work interval was created with {@link #hybridWorkInterval}.
+	 */
+	public String getSubjectName() {
+		return subjectName;
 	}
 	
 	public boolean isCertain() {
@@ -350,5 +381,32 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 		long lstart = getStartMillis();
 		long rstart = another.getStartMillis();
 		return lstart < rstart ? -1 : (lstart == rstart ? 0 : 1);
+	}
+	
+	/**
+	 * Creates a TaskWorkInterval from a cursor to a URI returned by 
+	 * {@link Schema#getUriForRangeHybrid(long, long)}. Assumes the cursor is 
+	 * already pointing to the correct row.
+	 * @param cursor A cursor for the task + work interval join in the database
+	 * @throws IllegalArgumentException if a value found in the database
+	 * was illegal or the cursor was null
+	 * @throws NumberFormatException if a value that was supposed to be a 
+	 * number was not actually a number
+	 */
+	public static TaskWorkInterval hybridWorkInterval(Cursor cursor) {
+		if (cursor == null)
+			throw new IllegalArgumentException("cursor must not be null");
+
+		// parseLong gives better error checking than cursor.getLong
+		long id = Long.parseLong(cursor.getString(0));
+		String taskName = cursor.getString(1);
+		String subjectName = cursor.getString(2);
+		long start = Long.parseLong(cursor.getString(3));
+		long end = Long.parseLong(cursor.getString(4));
+		boolean isCertain = Integer.parseInt(cursor.getString(5)) == 1;
+		TaskWorkInterval twi = new TaskWorkInterval(id, start, end, isCertain);
+		twi.taskName = taskName;
+		twi.subjectName = subjectName;
+		return twi;
 	}
 }
