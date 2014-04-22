@@ -13,14 +13,13 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.provider.BaseColumns;
 import android.text.TextUtils;
-import edu.ou.gradeient.TimeUtils;
 
 /**
  * Represents a work interval for a task.
  * This class does NO checking whether it's within the parent Task's interval.
  */
-public class TaskWorkInterval implements Comparable<TaskWorkInterval>, 
-		Serializable {
+public class TaskWorkInterval extends DateTimeInterval
+		implements Comparable<TaskWorkInterval>, Serializable {
 
 	/** Schema for the work interval table in the database and ContentProvider */
 	public static final class Schema implements BaseColumns {
@@ -102,7 +101,7 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 		/** Get a URI for hybrid work time/tasks in the given date range 
 		 * (in milliseconds since epoch) */
 		public static Uri getUriForRangeHybrid(long start, long end) {
-			return Uri.withAppendedPath(CONTENT_URI_HYBRID, start + ""); 
+			return Uri.withAppendedPath(CONTENT_URI_HYBRID, start + "/" + end); 
 		}
 		
 		/** Special join table for getting work intervals with task names
@@ -144,8 +143,6 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 	private long id;
 	/** Task ID this work interval is for */
 	private long taskId;
-	/** Interval of this work interval */
-	private MutableInterval interval;
 	/** Certainty of work interval (false = maybe, true = definitely) */
 	private boolean isCertain;
 	/** Name of the task this work interval is for (will be null except for
@@ -260,103 +257,6 @@ public class TaskWorkInterval implements Comparable<TaskWorkInterval>,
 	 */
 	public long getEndMillis() {
 		return interval.getEndMillis();
-	}
-	
-	/**
-	 * Sets the start date/time for the interval.
-	 * @param start The new start date/time.
-	 * @param maintainDuration If this is true, the end date/time will be
-	 * shifted to maintain the task's previous duration. If this is false and
-	 * start is after end, end will be updated to be the same as start.
-	 * @throws IllegalArgumentException if start is < 0
-	 */
-	public void setStart (long start, boolean maintainDuration) {
-		TimeUtils.setStart(interval, start, maintainDuration);
-	}
-	
-	/**
-	 * Sets the new start time for the interval.
-	 * @param hour new hour of day, 0-23
-	 * @param minute new minute of hour, 0-59
-	 * @param maintainDuration If this is true, the end time will be shifted
-	 * to maintain the interval's previous duration. If this is false and 
-	 * setting start's time to hour and minute results in a time that is 
-	 * after end, end will be updated to be the same as start.
-	 * @throws IllegalArgumentException if minute or hour is invalid
-	 */
-	public void setStartTime(int hour, int minute, boolean maintainDuration) {
-		TimeUtils.setStartTime(interval, hour, minute, maintainDuration);
-	}
-	
-	/**
-	 * Sets the new start date for the interval.
-	 * @param year new year, 1970-2036
-	 * @param month new month of year, 0-11
-	 * @param day new day of month, 1-31
-	 * @param maintainDuration If this is true, the end date will be shifted
-	 * to maintain the interval's previous duration. If this is false and 
-	 * setting start's date to the given values results in a date that is after
-	 * end, end will be updated to be the same as start.
-	 * @throws IllegalArgumentException if day, month, or year is invalid
-	 */
-	public void setStartDate(int year, int month, int day,
-			boolean maintainDuration) {
-		TimeUtils.setStartDate(interval, year, month, day, maintainDuration);
-	}
-	
-	/** 
-	 * Set the new end time/date for the interval.
-	 * @param end The new end time/date. If it is before start, start will be 
-	 * updated to be the same as end.
-	 * @throws IllegalArgumentException if end < 0
-	 */
-	public void setEnd (long end) {
-		TimeUtils.setEnd(interval, end);
-	}
-	
-	/**
-	 * Sets the new end time for the interval.
-	 * @param hour new hour, 0-23
-	 * @param minute new minute, 0-59
-	 * @param incDayIfEndBeforeStart If this is true and the resulting end time
-	 * is before start, increment the new end time's day. If this is false and
-	 * the resulting end time is before start, start will be updated to be the
-	 * same as end.
-	 * @throws IllegalArgumentException if hour or minute is invalid
-	 */
-	public void setEndTime(int hour, int minute, 
-			boolean incDayIfEndBeforeStart) {
-		TimeUtils.setEndTime(interval, hour, minute, incDayIfEndBeforeStart);
-	}
-	
-	/**
-	 * Sets the new end date for the interval. If the resulting end time/date is 
-	 * before start, start will be updated to be the same as end.
-	 * @param year new year, 1970-2036
-	 * @param month new month of year, 1-12
-	 * @param day new day of month, 1-31
-	 * @throws IllegalArgumentException if day, month, or year is invalid
-	 */
-	public void setEndDate(int year, int month, int day) {
-		TimeUtils.setEndDate(interval, year, month, day);
-	}
-	
-	/**
-	 * Set the new start and end date/time for the interval.
-	 * @param start The new start time
-	 * @param end The new end time
-	 * @throws IllegalArgumentException if start > end
-	 */
-	public void setStartAndEnd(long start, long end) {
-		TimeUtils.setStartAndEnd(interval, start, end);
-	}
-
-	/**
-	 * Shifts the time of this interval by the specified number of milliseconds.
-	 * @param shiftBy time in milliseconds
-	 */
-	public void shiftTime(long shiftBy) {
-		TimeUtils.shiftTimeOfInterval(interval, shiftBy);
 	}
 	
 	/**

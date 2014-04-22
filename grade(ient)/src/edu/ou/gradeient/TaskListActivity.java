@@ -47,6 +47,7 @@ public class TaskListActivity extends ListActivity
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_task_list_view);
+		getActionBar().setDisplayHomeAsUpEnabled(true);
 		
 		// Mappings of columns to views
 		String[] dataColumns = { Task.Schema.NAME, Task.Schema.END_INSTANT };
@@ -115,9 +116,6 @@ public class TaskListActivity extends ListActivity
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 			case android.R.id.home:
-				//TODO is this needed? some docs say it isn't, as long as a 
-				// parent activity is specified in the manifest.
-				
 				// This ID represents the Home or Up button. In the case of this
 				// activity, the Up button is shown. Use NavUtils to allow users
 				// to navigate up one level in the application structure. For

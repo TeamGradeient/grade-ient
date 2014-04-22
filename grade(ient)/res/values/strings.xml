@@ -24,7 +24,7 @@
     
     <!-- Home screen -->
     <string name="title_activity_home_screen">grade(ient)</string>
-    <string name="home_goto_calendar_label">Go to calendar</string>
+    <string name="home_goto_calendar_label">Go to\ncalendar</string>
 	<string name="action_task_list">Task list</string>
 	<string name="calendar_view">Calendar view</string>
 	<string name="next_work_times">Next work times</string>

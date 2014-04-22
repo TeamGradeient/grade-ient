@@ -2,27 +2,18 @@ package edu.ou.gradeient;
 
 import org.joda.time.DateTime;
 
-import edu.ou.gradeient.data.Task;
 import android.app.Activity;
-import android.app.DatePickerDialog;
-import android.app.DatePickerDialog.OnDateSetListener;
-import android.app.TimePickerDialog; //TODO later, change to radial version?
-import android.app.TimePickerDialog.OnTimeSetListener;
 import android.content.ContentUris;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.text.format.DateFormat;
-import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.DatePicker;
 import android.widget.TextView;
-import android.widget.TimePicker;
+import edu.ou.gradeient.data.Task;
 
 // This is somewhat based off of com.android.calendar.event.EditEventView
 
@@ -36,117 +27,9 @@ public class EditTaskActivity extends Activity {
 	private TextView subjectText;
 	private TextView notesText;
 	private CheckBox doneCheckBox;
-	private Button startDateButton;
-	private Button endDateButton;
-	private Button startTimeButton;
-	private Button endTimeButton;
 
-	private TimePickerDialog startTimePickerDialog;
-	private TimePickerDialog endTimePickerDialog;
-	private DatePickerDialog datePickerDialog;
-	
 	private Task task;
 	private int taskStatus;
-	
-	/* This class is used to update the time buttons. 
-	 * (from Android Calendar's com.android.calendar.event.EditEventView) */
-	private class TimeListener implements OnTimeSetListener {
-		private View view;
-		
-		public TimeListener(View view) {
-			this.view = view;
-		}
-
-		@Override
-		public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
-			if (this.view == startTimeButton)
-				task.setStartTime(hourOfDay, minute, true);
-			else
-				task.setEndTime(hourOfDay, minute, true);
-			updateTimeDateButtons();
-		}
-	}
-	
-	private class TimeClickListener implements View.OnClickListener {
-		@Override
-		public void onClick(View v) {
-			TimePickerDialog dialog;
-			if (v == startTimeButton) {
-				DateTime start = task.getStart();
-				if (startTimePickerDialog == null) {
-					startTimePickerDialog = new TimePickerDialog(
-							EditTaskActivity.this, 
-							new TimeListener(v), start.getHourOfDay(), 
-							start.getMinuteOfHour(), 
-							DateFormat.is24HourFormat(EditTaskActivity.this));
-				} else {
-					startTimePickerDialog.updateTime(start.getHourOfDay(),
-							start.getMinuteOfHour());
-				}
-				dialog = startTimePickerDialog;
-			} else {
-				DateTime end = task.getEnd();
-				if (endTimePickerDialog == null) {
-					endTimePickerDialog = new TimePickerDialog(
-							EditTaskActivity.this,
-							new TimeListener(v), end.getHourOfDay(), 
-							end.getMinuteOfHour(),
-							DateFormat.is24HourFormat(EditTaskActivity.this));
-				} else {
-					endTimePickerDialog.updateTime(end.getHourOfDay(), 
-							end.getMinuteOfHour());
-				}
-				dialog = endTimePickerDialog;
-			}
-			//TODO make sure that this works and we don't need to use a 
-			// fragment or any sort of fancy management stuff
-			dialog.show(); 
-		}
-	}
-	
-	private class DateListener implements OnDateSetListener {
-		private View view;
-		
-		public DateListener(View view) {
-			this.view = view;
-		}
-		
-		@Override
-		public void onDateSet(DatePicker view, int year, int month, int day) {
-			// For some reason, Android's date pickers return months in range
-			// 0 to 11, but joda-time (understandably) disapproves...
-			if (this.view == startDateButton)
-				task.setStartDate(year, month + 1, day, true);
-			else
-				task.setEndDate(year, month + 1, day);
-			updateTimeDateButtons();
-		}
-	}
-	
-	private class DateClickListener implements View.OnClickListener {
-		@Override
-		public void onClick(View v) {
-			//TODO why does Android Cal implement this differently from
-			// the TimeClickListener?
-			
-			if (datePickerDialog != null)
-				datePickerDialog.dismiss();
-			DateTime time;
-			if (v == startDateButton) 
-				time = task.getStart();
-			else
-				time = task.getEnd();
-			// Note that joda-time 1-12 months have to be adjusted to Android
-			// date picker 0-11 months...
-			datePickerDialog = new DatePickerDialog(EditTaskActivity.this, 
-					new DateListener(v), time.getYear(), 
-					time.getMonthOfYear() - 1,
-					time.getDayOfMonth());
-			//TODO make sure that this works and we don't need to use a 
-			// fragment or any sort of fancy management stuff
-			datePickerDialog.show();
-		}
-	}
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -159,10 +42,10 @@ public class EditTaskActivity extends Activity {
 		subjectText = (TextView)findViewById(R.id.subject_name);
 		notesText = (TextView)findViewById(R.id.notes);
 		doneCheckBox = (CheckBox)findViewById(R.id.is_done);
-		startDateButton = (Button)findViewById(R.id.start_date);
-		endDateButton = (Button)findViewById(R.id.end_date);
-		startTimeButton = (Button)findViewById(R.id.start_time);
-		endTimeButton = (Button)findViewById(R.id.end_time);
+		Button startDateButton = (Button)findViewById(R.id.start_date);
+		Button endDateButton = (Button)findViewById(R.id.end_date);
+		Button startTimeButton = (Button)findViewById(R.id.start_time);
+		Button endTimeButton = (Button)findViewById(R.id.end_time);
 		
 		if (savedInstanceState == null)
 			setTaskFromIntent();
@@ -176,11 +59,12 @@ public class EditTaskActivity extends Activity {
 			DateTime end = new DateTime(start).plusDays(1);
 			task = new Task("", start.getMillis(), end.getMillis());
 		}
-		updateTimeDateButtons();
-		startDateButton.setOnClickListener(new DateClickListener());
-		endDateButton.setOnClickListener(new DateClickListener());
-		startTimeButton.setOnClickListener(new TimeClickListener());
-		endTimeButton.setOnClickListener(new TimeClickListener());
+		TimeUtils.setDateText(task.getInterval(), startTimeButton, 
+				startDateButton, endTimeButton, endDateButton);
+		startDateButton.setOnClickListener(new DateClickListener(this, task));
+		endDateButton.setOnClickListener(new DateClickListener(this, task));
+		startTimeButton.setOnClickListener(new TimeClickListener(this, task));
+		endTimeButton.setOnClickListener(new TimeClickListener(this, task));
 		nameText.setTextKeepState(task.getName());
 		subjectText.setTextKeepState(task.getSubject());
 		notesText.setTextKeepState(task.getNotes());
@@ -283,60 +167,6 @@ public class EditTaskActivity extends Activity {
 		task.setSubject(subjectText.getText().toString());
 	}
 	
-	private void updateTimeDateButtons() {
-		long startMillis = task.getStartMillis();
-		long endMillis = task.getEndMillis();
-		setDate(startDateButton, startMillis);
-		setTime(startTimeButton, startMillis);
-		setDate(endDateButton, endMillis);
-		setTime(endTimeButton, endMillis);
-	}
-
-	private void setDate(TextView view, long millis) {
-		int flags = DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_YEAR
-				| DateUtils.FORMAT_SHOW_WEEKDAY | DateUtils.FORMAT_ABBREV_MONTH
-				| DateUtils.FORMAT_ABBREV_WEEKDAY;
-
-		//TODO what to do with this?
-//		// Unfortunately, DateUtils doesn't support a timezone other than the
-//		// default timezone provided by the system, so we have this ugly hack
-//		// here to trick it into formatting our time correctly. In order to
-//		// prevent all sorts of craziness, we synchronize on the TimeZone class
-//		// to prevent other threads from reading an incorrect timezone from
-//		// calls to TimeZone#getDefault()
-//		String dateString;
-//		synchronized (TimeZone.class) {
-//			TimeZone.setDefault(TimeZone.getTimeZone(mTimezone));
-//			dateString = DateUtils.formatDateTime(mActivity, millis, flags);
-//			// setting the default back to null restores the correct behavior
-//			TimeZone.setDefault(null);
-//		}
-		view.setText(DateUtils.formatDateTime(this, millis, flags));
-	}
-
-	private void setTime(TextView view, long millis) {
-
-		int flags = DateUtils.FORMAT_SHOW_TIME;
-		flags |= DateUtils.FORMAT_CAP_NOON_MIDNIGHT;
-		if (DateFormat.is24HourFormat(this)) 
-			flags |= DateUtils.FORMAT_24HOUR;
-
-//		//TODO what to do with this?
-//		// Unfortunately, DateUtils doesn't support a timezone other than the
-//		// default timezone provided by the system, so we have this ugly hack
-//		// here to trick it into formatting our time correctly. In order to
-//		// prevent all sorts of craziness, we synchronize on the TimeZone class
-//		// to prevent other threads from reading an incorrect timezone from
-//		// calls to TimeZone#getDefault()
-//		String timeString;
-//		synchronized (TimeZone.class) {
-//			TimeZone.setDefault(TimeZone.getTimeZone(mTimezone));
-//			timeString = DateUtils.formatDateTime(mActivity, millis, flags);
-//			TimeZone.setDefault(null);
-//		}
-		view.setText(DateUtils.formatDateTime(this, millis, flags));
-	}
-
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
