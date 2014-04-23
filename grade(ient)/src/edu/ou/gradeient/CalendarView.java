@@ -185,6 +185,7 @@ public class CalendarView extends View {
 			columns.remove(4);
 		if (columns.get(3).isEmpty())
 			columns.remove(3);
+		invalidate();
 	}
 	
 	private void init()

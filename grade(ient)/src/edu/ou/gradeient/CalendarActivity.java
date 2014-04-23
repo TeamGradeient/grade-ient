@@ -40,6 +40,10 @@ public class CalendarActivity extends Activity
 		// Show the Up button in the action bar.
 		getActionBar().setDisplayHomeAsUpEnabled(true);
 		
+		if (savedInstanceState != null) {
+			startMillis = savedInstanceState.getLong(Extras.START_MILLIS);
+			endMillis = savedInstanceState.getLong(Extras.END_MILLIS);
+		}
 		calendarView = (CalendarView)findViewById(R.id.calendar_task_view);
 		
 //		LinearLayout ll = (LinearLayout) findViewById(R.id.task_layout);
@@ -103,15 +107,24 @@ public class CalendarActivity extends Activity
 		switch (requestCode) {
 			case ADD_REQUEST:
 				// Make sure the view updates
-				if (resultCode == RESULT_OK)
-					//TODO do I need to requery or anything?
-					calendarView.updateTasks(taskCursor, workCursor, 
-							startMillis, endMillis);
+				if (resultCode == RESULT_OK) {
+					getLoaderManager().restartLoader(TASK_LOADER, null, this);
+					getLoaderManager().restartLoader(WORK_LOADER, null, this);
+				}
 				break;
 			//TODO handle edit requests too!
 			default:
 				Log.wtf(TAG, "Unknown request code: " + requestCode);
 		}
+	}
+	
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		// Per the documentation, this will save the contents of the Views.
+		super.onSaveInstanceState(outState);
+		// Save last loaded start and end times
+		outState.putLong(Extras.START_MILLIS, startMillis);
+		outState.putLong(Extras.END_MILLIS, endMillis);
 	}
 	
 	@Override

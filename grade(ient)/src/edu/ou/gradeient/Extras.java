@@ -10,8 +10,13 @@ public interface Extras {
 	/** Key to pass serialized task object in bundle (mostly just used for
 	 * onSaveInstanceState) */
 	public static final String TASK_OBJ = "edu.ou.gradeient.TASK_OBJ";
-	/** Key to pass start time (in millis since epoch) in bundle (value: long) */
+	/** Key to pass start time to scroll to (in millis since epoch) in bundle 
+	 * (value: long) */
 	public static final String SCROLL_TO = "edu.ou.gradeient.SCROLL_TO";
+	/** Key to pass start time (in millis since epoch) in bundle (value: long) */
+	public static final String START_MILLIS = "edu.ou.gradeient.START_MILLIS";
+	/** Key to pass end time (in millis since epoch) in bundle (value: long) */
+	public static final String END_MILLIS = "edu.ou.gradeient.END_MILLIS";
 	
 	/** Task status values to be passed in bundle */
 	public interface TaskStatus {
