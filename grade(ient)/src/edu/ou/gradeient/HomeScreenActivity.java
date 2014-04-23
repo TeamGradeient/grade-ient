@@ -10,6 +10,7 @@ import android.app.LoaderManager;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
@@ -46,15 +47,14 @@ public class HomeScreenActivity extends Activity
 	// SimpleCursorAdapter for each view to display the data in the lists
 	private SimpleCursorAdapter taskAdapter;
 	private SimpleCursorAdapter workAdapter;
-	// For the 
-	// Register for LoaderManager notifications
-	private LoaderManager.LoaderCallbacks<Cursor> callbacks = this;
 	
 	/** request to add task */
 	private static final int ADD_REQUEST = 1;
 
 	/** DrawerLayout to hold the slide-out drawer */
 	private DrawerLayout drawerLayout;
+	/** Toggle handler for the drawer */
+	private ActionBarDrawerToggle drawerToggle;
 	/** ListView to put inside drawer */
 	private ListView drawerList;
 	/** Adapter to hold string array for drawer items */
@@ -142,7 +142,7 @@ public class HomeScreenActivity extends Activity
 				drawerItems);
 		drawerList.setAdapter(drawerAdapter);
 		drawerList.setOnItemClickListener(new DrawerItemClickListener());
-		ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(this, drawerLayout,
+		drawerToggle = new ActionBarDrawerToggle(this, drawerLayout,
                 R.drawable.ic_drawer, R.string.open_drawer, R.string.close_drawer) {
 
             /** Called when a drawer has settled in a completely closed state. */
@@ -161,7 +161,7 @@ public class HomeScreenActivity extends Activity
                 invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
             }
         };
-        drawerLayout.setDrawerListener(toggle);
+        drawerLayout.setDrawerListener(drawerToggle);
 	}
 	
 	private void updateView() {
@@ -174,11 +174,24 @@ public class HomeScreenActivity extends Activity
 			weekdayMonthDate.setText(TimeUtils.formatWeekdayMonthDayShorter(time));
 		}
 		// re-init loaders
-		getLoaderManager().restartLoader(TASK_LOADER_ID, null, callbacks);
-		getLoaderManager().restartLoader(WORK_LOADER_ID, null, callbacks);
-		getLoaderManager().restartLoader(NEXT_WORK_LOADER_ID, null, callbacks);
+		getLoaderManager().restartLoader(TASK_LOADER_ID, null, this);
+		getLoaderManager().restartLoader(WORK_LOADER_ID, null, this);
+		getLoaderManager().restartLoader(NEXT_WORK_LOADER_ID, null, this);
 	}
 
+	@Override
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        // Sync the toggle state after onRestoreInstanceState has occurred.
+        drawerToggle.syncState();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        drawerToggle.onConfigurationChanged(newConfig);
+    }
+	
 	public void startCalendarActivity(View view)
 	{
 		startActivity(new Intent (this, CalendarActivity.class));
@@ -188,7 +201,7 @@ public class HomeScreenActivity extends Activity
 	{
 		startActivity(new Intent (this, TaskListActivity.class));
 	}
-	
+    
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
@@ -198,6 +211,11 @@ public class HomeScreenActivity extends Activity
 	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
+		// Pass the event to ActionBarDrawerToggle in case it was the app icon
+		// touch event
+		if (drawerToggle.onOptionsItemSelected(item))
+			return true;
+
 		switch (item.getItemId()) {
 			case R.id.action_add_task:
 				// Start an intent to add a task
@@ -247,10 +265,14 @@ public class HomeScreenActivity extends Activity
 		// Display tasks and work times in the next two weeks
 		long now = System.currentTimeMillis();
 		long later = new DateTime(now).plusWeeks(2).getMillis();
+		System.out.println("Now: " + now + ", later: " + later);
+		System.out.println(Task.Schema.getUriForRange(now, later));
 		switch (id) {
 			case TASK_LOADER_ID:
+				//TODO FIGURE OUT WHY RANGE VERSION WON'T WORK
 				return new CursorLoader(this, 
-						Task.Schema.getUriForRange(now, later),
+						Task.Schema.CONTENT_URI,
+//						Task.Schema.getUriForRange(now, later),
 						TASK_LOADER_COLUMNS, null, null, null);
 			case WORK_LOADER_ID:
 				return new CursorLoader(this, 
@@ -279,9 +301,11 @@ public class HomeScreenActivity extends Activity
 			// Cursor with the SimpleCursorAdapter.
 			case TASK_LOADER_ID:
 				taskAdapter.swapCursor(data);
+				Log.d(TAG, "Tasks loaded: " + data.getCount());
 				break;
 			case WORK_LOADER_ID:
 				workAdapter.swapCursor(data);
+				Log.d(TAG, "Work times loaded: " + data.getCount());
 				break;
 			case NEXT_WORK_LOADER_ID:
 				data.moveToNext();
@@ -350,8 +374,8 @@ public class HomeScreenActivity extends Activity
 	private class DrawerItemClickListener implements ListView.OnItemClickListener
 	{
 		@Override
-		public void onItemClick(AdapterView<?> adapterView, View view, int position,
-				long id) 
+		public void onItemClick(AdapterView<?> adapterView, View view, 
+				int position, long id) 
 		{
 			switch(position)
 			{

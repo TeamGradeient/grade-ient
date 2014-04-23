@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.TreeSet;
 
 import org.joda.time.MutableInterval;
@@ -85,6 +86,15 @@ public class Task extends DateTimeInterval
 			return Uri.withAppendedPath(CONTENT_URI, start + "/" + end);
 		}
 	}
+	
+	public static final Comparator<Task> BY_START_DATE = new Comparator<Task>() {
+		@Override
+		public int compare(Task lhs, Task rhs) {
+			long lstart = lhs.getStartMillis();
+			long rstart = rhs.getStartMillis();
+			return lstart < rstart ? -1 : (lstart == rstart ? 0 : 1);
+		}
+	};
 	
 	private static final long serialVersionUID = -2567385792745859337L;
 

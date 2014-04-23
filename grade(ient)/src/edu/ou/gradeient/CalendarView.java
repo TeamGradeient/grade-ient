@@ -1,14 +1,15 @@
 package edu.ou.gradeient;
 
-import java.util.Calendar;
-import java.util.GregorianCalendar;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.TreeSet;
 
-import edu.ou.gradeient.data.Task;
-import edu.ou.gradeient.data.TaskWorkInterval;
+import org.joda.time.DateTime;
+import org.joda.time.Interval;
+import org.joda.time.MutableDateTime;
+
 import android.content.Context;
+import android.database.Cursor;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
@@ -24,6 +25,8 @@ import android.widget.AbsoluteLayout;
 import android.widget.AbsoluteLayout.LayoutParams;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import edu.ou.gradeient.data.Task;
+import edu.ou.gradeient.data.TaskWorkInterval;
 
 /*
  * There is a TreeSet of Tasks called "tasks" as a member.
@@ -74,17 +77,19 @@ public class CalendarView extends View {
 
 	private String taskDueTime;
 	
-	private Calendar startDate = new GregorianCalendar();
-	private Calendar endDate = new GregorianCalendar();
-	
+	private DateTime startDate;
+	private DateTime endDate;
+
 	private long startTime;
 	private long endTime;
+	//TODO make a background task to update this
 	private long currentTime = System.currentTimeMillis();
 	private long timeInterval;
 	private long timeSinceStart;
 
 	// TEMPORARY
 	private TreeSet<Task> tasks = new TreeSet<Task>();
+	private ArrayList<ArrayList<Task>> columns = new ArrayList<ArrayList<Task>>();
 
 	public CalendarView(Context context) {
 		super(context);
@@ -99,62 +104,95 @@ public class CalendarView extends View {
 		init();
 	}
 	
+	/**
+	 * Update the tasks and work times the view displays
+	 * @param taskCursor Cursor to task table
+	 * @param workCursor Cursor to work times table
+	 * @param startMillis Start time used in query
+	 * @param endMillis End time used in query
+	 */
+	public void updateTasks(Cursor taskCursor, Cursor workCursor,
+			long startMillis, long endMillis) {
+		// Update the dates displayed
+		setDisplayDates(startMillis, endMillis);
+
+		//TODO figure out a better long-term solution
+		taskCursor.moveToFirst();
+		// get all tasks in the date range shown, temporarily indexed by ID
+		HashMap<Long, Task> taskMap = new HashMap<Long, Task>();
+		Interval interval = new Interval(startTime, endTime);
+		while (taskCursor.moveToNext()) {
+			try {
+				Task t = new Task(taskCursor, null);
+				if (interval.overlaps(t.getInterval()))
+					taskMap.put(t.getId(), t);
+			} catch (Exception ex) {
+				Log.w(TAG, "While getting tasks: " + ex);
+			}
+		}
+		// match up work times with tasks
+		workCursor.moveToFirst();
+		while (workCursor.moveToNext()) {
+			try {
+				TaskWorkInterval twi = new TaskWorkInterval(workCursor);
+				if (taskMap.containsKey(twi.getTaskId()))
+					taskMap.get(twi.getTaskId()).addWorkInterval(twi);
+			} catch (Exception ex) {
+				Log.w(TAG, "While getting work times: " + ex);
+			}
+		}
+		// add everything to the actual task map, sorted by start date
+		tasks = new TreeSet<Task>(Task.BY_START_DATE);
+		tasks.addAll(taskMap.values());
+		
+		// Determine which tasks should go into which columns (no more than 5 
+		// columns are allowed). Currently, this goes through the tasks in order
+		// of start date and uses a greedy strategy to place them in columns.
+		// (Greedy means it places them in the first spot from left to right 
+		// where nothing else is in the column at that time.)
+		// This will not yield the best results visually, and it could also
+		// result in less-than-optimal placements with some tasks left out.
+		columns = new ArrayList<ArrayList<Task>>();
+		for (int i = 0; i < 5; ++i)
+			columns.add(new ArrayList<Task>());
+		int failCount = 0;
+		for (Task t : tasks) {
+			boolean success = false;
+			long tStart = t.getStartMillis();
+			for (ArrayList<Task> col : columns) {
+				// Try to find an empty column or a column in which the 
+				// last task ends before this one begins.
+				if (col.isEmpty()
+						|| col.get(col.size() - 1).getEndMillis() < tStart) {
+					col.add(t);
+					success = true;
+					break;
+				}
+			}
+			if (success == false) {
+				Log.w(TAG, "Couldn't display task " + t.getName() + 
+						" at " + t.getStart().toString());
+				++failCount;
+			}
+		}
+		if (failCount != 0)
+			//TODO perhaps show the user a dialog saying some tasks are missing?
+			Log.w(TAG, "Total tasks missing: " + failCount);
+		
+		// If the fourth and fifth columns didn't get used, remove them so the
+		// task bars can be wider.
+		if (columns.get(4).isEmpty())
+			columns.remove(4);
+		if (columns.get(3).isEmpty())
+			columns.remove(3);
+	}
+	
 	private void init()
 	{
 		initializePaints();
-		setDisplayDates();
-
-		startTime = startDate.getTimeInMillis();
-		endTime = endDate.getTimeInMillis();
-		timeInterval= endTime-startTime;
-		
-		setVisibleHeight();
-		usableWidth = (int) (absoluteWidth - distanceFromEdge);
-		
-		// wait for tasks to show up
-		try { // yaaaay catching everything
-			int waitTime = 0;
-			while (CalendarActivity.tasks == null && waitTime < 1000) {
-				try {
-					Thread.sleep(50);
-					waitTime += 50;
-				} catch (InterruptedException e) {
-				}
-			}
-			if (waitTime == 1000)
-				return;
-			CalendarActivity.tasks.moveToFirst();
-			// get all tasks, temporarily indexed by ID
-			HashMap<Long, Task> taskMap = new HashMap<Long, Task>();
-			while (CalendarActivity.tasks != null &&
-					CalendarActivity.tasks.moveToNext()) {
-				try {
-					//TODO add work times
-					Task t = new Task(CalendarActivity.tasks, null);
-					taskMap.put(t.getId(), t);
-				} catch (Exception ex) {
-					Log.w(TAG, "While getting tasks: " + ex);
-				}
-			}
-			// match up work times with tasks
-			if (CalendarActivity.workTimes != null)
-				CalendarActivity.workTimes.moveToFirst();
-			while (CalendarActivity.workTimes != null && 
-					CalendarActivity.workTimes.moveToNext()) {
-				try {
-					TaskWorkInterval twi = 
-							new TaskWorkInterval(CalendarActivity.workTimes);
-					if (taskMap.containsKey(twi.getTaskId()))
-						taskMap.get(twi.getTaskId()).addWorkInterval(twi);
-				} catch (Exception ex) {
-					Log.w(TAG, "While getting work times: " + ex);
-				}
-			}
-			// add everything to the actual task map
-			tasks.addAll(taskMap.values());
-		} catch (Exception ex) {
-			Log.w(TAG, "While getting tasks: " + ex);
-		}
+		DateTime startDate = DateTime.now().withTimeAtStartOfDay().minusWeeks(1);
+		DateTime endDate = startDate.plusWeeks(4);
+		setDisplayDates(startDate.getMillis(), endDate.getMillis());
 	}
 	
 	private void drawTask(Canvas canvas, int numberOfTasks, 
@@ -222,10 +260,10 @@ public class CalendarView extends View {
 		return (milliseconds - startTime)*this.getHeight()/timeInterval;
 	}
 	
-	public float findYForBeginningOfDay(long milliseconds)
+	public int findYForBeginningOfDay(long milliseconds)
 	{
 		long dayNumber = (milliseconds-startTime)/DAY_MILLIS;
-		return dayNumber*dayHeight; 
+		return (int)(dayNumber*dayHeight); 
 	}
 	
 	/**Probably not going to use this method*/
@@ -247,21 +285,20 @@ public class CalendarView extends View {
 		visibleHeight = absoluteHeight - actionBarHeight;
 	}
 	
-	/**This is just a method to set up dates to make testing easier*/
-	private void setDisplayDates()
+	private void setDisplayDates(long startMillis, long endMillis)
 	{
-		startDate.set(Calendar.MILLISECOND, 0);
-		startDate.set(Calendar.SECOND, 0);
-		startDate.set(Calendar.MINUTE, 0);
-		startDate.set(Calendar.HOUR_OF_DAY, 0);
+		// So that only whole days are shown, "round" the start date up and the
+		// end date down for viewing purposes.
+		startDate = new DateTime(startMillis);
+		if (startDate.getMillisOfDay() != 0)
+			startDate = startDate.withTimeAtStartOfDay().plusDays(1);
+		endDate = new DateTime(endMillis).withTimeAtStartOfDay();
+		startTime = startDate.getMillis();
+		endTime = endDate.getMillis();
+		timeInterval= endTime-startTime;
 		
-		endDate.set(Calendar.MILLISECOND, 0);
-		endDate.set(Calendar.SECOND, 0);
-		endDate.set(Calendar.MINUTE, 0);
-		endDate.set(Calendar.HOUR_OF_DAY, 0);
-
-		startDate.add(Calendar.DAY_OF_YEAR,  -2);
-		endDate.add(Calendar.DAY_OF_YEAR, 20); 
+		setVisibleHeight();
+		usableWidth = (int) (absoluteWidth - distanceFromEdge);
 	}
 	
 	private void initializePaints()
@@ -273,7 +310,6 @@ public class CalendarView extends View {
 		dayNameTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 		dayNameTextPaint.setTypeface(roboto);
 		dayNameTextPaint.setTextSize(15 * scale);
-//		dayNameTextPaint.setTextSize((int)getResources().getDimension(R.dimen.home_text_l));
 		dayNameTextPaint.setARGB(255,  100,  100,  100);	
 		
 		dayNumberTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -288,14 +324,8 @@ public class CalendarView extends View {
 		taskBackgroundPaint = new Paint();
 		taskBackgroundPaint.setARGB(85, 100, 0, 100);
 		taskBackgroundPaint.setStyle(Paint.Style.FILL);
-//		taskBackgroundPaint.setShadowLayer(1, -10, -10, Color.DKGRAY);
 	}
 
-//	public void addTaskToView(int taskNumber, float start, float end, String taskName)
-//	{
-//		++numberOfTasks;
-//	}
-	
 	/**Rough implementation of onMeasure method*/
 	@Override
 	public void onMeasure(int x, int y)
@@ -315,59 +345,74 @@ public class CalendarView extends View {
 	{
 		super.onDraw(canvas);
 		drawBackground(canvas);
-		//drawTasks(canvas);
-		drawTask(canvas, 4, 0, startTime + (long)(1.5*DAY_MILLIS), startTime + 3*DAY_MILLIS, "Calculus");
+		drawTasks(canvas);
+//		drawTask(canvas, 4, 0, startTime + DAY_MILLIS*3/2, startTime + DAY_MILLIS*3, "Calculus");
 		//Draw a task again in the same place to indicate a work time. 
 		//drawTaskBackground(canvas, 4, 0, startTime + 2.2*DAY_MILLIS, startTime + 2.5*DAY_MILLIS);
-		drawTask(canvas, 4, 2, startTime + 2*DAY_MILLIS, startTime + (long)(3.5*DAY_MILLIS), "SS work");
-		drawTask(canvas, 4, 3, startTime + (long)(2.5*DAY_MILLIS), startTime + (long)(3.5*DAY_MILLIS), "Comp. Org");
-		drawTask(canvas, 4, 1, startTime + (long)(0.5*DAY_MILLIS), startTime + 2*DAY_MILLIS, "Data Structures.");
+//		drawTask(canvas, 4, 2, startTime + DAY_MILLIS*2, startTime + DAY_MILLIS*7/2, "SS work");
+//		drawTask(canvas, 4, 3, startTime + DAY_MILLIS*5/2, startTime + DAY_MILLIS*7/2, "Comp. Org");
+//		drawTask(canvas, 4, 1, startTime + DAY_MILLIS/2, startTime + DAY_MILLIS*2, "Data Structures.");
 		drawTimeBar(canvas);
 	}
 	
 	private void drawTimeBar(Canvas canvas)
 	{	
+		currentTime = System.currentTimeMillis();
 		if (currentTime < endTime && currentTime > startTime) {
 			timeSinceStart = currentTime-startTime;
 			canvas.drawRect(0,  timeSinceStart/(float)timeInterval*canvas.getHeight(), 
 					canvas.getWidth(), 
 					timeSinceStart/(float)timeInterval*canvas.getHeight() + 3*scale, 
 					currentTimeBarPaint);
-			return;
 		}
-		System.out.println("Current time not within interval of display.");
-		return;
 	}
 	
 	private void drawTasks(Canvas canvas)
 	{
-		
+		int numColumns = columns.size();
+		for (int col = 0; col < numColumns; ++col) {
+			for (Task t : columns.get(col)) {
+				// Draw the task
+				drawTask(canvas, numColumns, col, t.getStartMillis(), 
+						t.getEndMillis(), t.getName());
+				// Draw the task's work intervals: for now, this is done by 
+				// drawing another "task" bar on top of the real task bar.
+				for (TaskWorkInterval twi : t.getWorkIntervals()) {
+					drawTask(canvas, numColumns, col, twi.getStartMillis(),
+							twi.getEndMillis(), "");
+					// certain work intervals should be extra dark
+					if (twi.isCertain())
+						drawTask(canvas, numColumns, col, twi.getStartMillis(),
+								twi.getEndMillis(), "");
+				}
+			}
+		}
 	}
 	
 
-	//TODO: This definitely won't work if startDate and endDate are in 
-	//different years. However, this works as a temporary solution.
 	private void drawBackground(Canvas canvas)
 	{
-		int firstDay = startDate.get(Calendar.DAY_OF_YEAR);
-		int currentDay = firstDay;
-		int lastDay = endDate.get(Calendar.DAY_OF_YEAR);
-		Calendar day = (Calendar) startDate.clone();
-		float dayHeight = canvas.getHeight()/(lastDay-currentDay);
+		MutableDateTime day = new MutableDateTime(startDate);
+		// Get the number of days between start and end, handling leap years.
+		// (We can't just use (startTime - endTime) / DAY_MILLIS because of
+		// daylight savings time, though probably other things will break
+		// because of DST even if this doesn't...)
+		int numDays = endDate.getDayOfYear() - startDate.getDayOfYear();
+		if (startDate.getYear() != endDate.getYear())
+			numDays += (startDate.year().isLeap() ? 366 : 355) - startDate.getDayOfYear();
+		float dayHeight = (float)canvas.getHeight() / numDays;
 		int width = canvas.getWidth();
-		while (currentDay < lastDay)
+		for (int currentDay = 0; currentDay < numDays; 
+				++currentDay, day.addDays(1))
 		{
 			//Draw separators
-			canvas.drawRect(0,  dayHeight*(currentDay - firstDay),  width,  
-					dayHeight*(currentDay - firstDay)+2.5f*scale, daySeparatorPaint);
+			canvas.drawRect(0, dayHeight*currentDay, width,  
+					dayHeight*currentDay + 2.5f*scale, daySeparatorPaint);
 			//Draw text for each day
-			canvas.drawText(day.getDisplayName(Calendar.DAY_OF_WEEK, 
-												Calendar.SHORT, Locale.US),
-					3*scale, dayHeight*(currentDay-firstDay)+15*scale, dayNameTextPaint);
-			canvas.drawText(String.valueOf(day.get(Calendar.DAY_OF_MONTH)),
-					3*scale, dayHeight*(currentDay-firstDay)+37*scale, dayNumberTextPaint);
-			++currentDay;
-			day.roll(Calendar.DAY_OF_YEAR,  true);
+			canvas.drawText(day.toString("EEE"),
+					3*scale, dayHeight*currentDay + 15*scale, dayNameTextPaint);
+			canvas.drawText(day.getDayOfMonth() + "",
+					3*scale, dayHeight*currentDay + 37*scale, dayNumberTextPaint);
 		}
 	}
 }
