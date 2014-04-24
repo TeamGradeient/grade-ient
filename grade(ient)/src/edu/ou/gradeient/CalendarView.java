@@ -75,8 +75,6 @@ public class CalendarView extends View {
 	 * of task backgrounds should be rounded*/
 	private float taskRectangleRounding = 7.5f * scale;
 
-	private String taskDueTime;
-	
 	private DateTime startDate;
 	private DateTime endDate;
 
@@ -117,7 +115,7 @@ public class CalendarView extends View {
 		setDisplayDates(startMillis, endMillis);
 
 		//TODO figure out a better long-term solution
-		taskCursor.moveToFirst();
+		taskCursor.moveToPosition(-1);
 		// get all tasks in the date range shown, temporarily indexed by ID
 		HashMap<Long, Task> taskMap = new HashMap<Long, Task>();
 		Interval interval = new Interval(startTime, endTime);
@@ -131,7 +129,7 @@ public class CalendarView extends View {
 			}
 		}
 		// match up work times with tasks
-		workCursor.moveToFirst();
+		workCursor.moveToPosition(-1);
 		while (workCursor.moveToNext()) {
 			try {
 				TaskWorkInterval twi = new TaskWorkInterval(workCursor);
@@ -196,6 +194,7 @@ public class CalendarView extends View {
 		setDisplayDates(startDate.getMillis(), endDate.getMillis());
 	}
 	
+	// Task name should be null if we're drawing a work time
 	private void drawTask(Canvas canvas, int numberOfTasks, 
 			int taskNumber, long start, long end, String taskName)
 	{	
@@ -211,7 +210,10 @@ public class CalendarView extends View {
 				findYPosition(end));
 		canvas.drawRoundRect(taskBounds, taskRectangleRounding,  
 				taskRectangleRounding,  taskBackgroundPaint);
-		drawTaskDueTime(canvas, leftEdge, rightEdge, end);
+		if (taskName != null) {
+			drawTaskDueTime(canvas, leftEdge, rightEdge, end);
+			//TODO draw name
+		}
 	}
 	
 	private void setTaskTitle(String title, float leftEdge, float rightEdge)
@@ -227,12 +229,7 @@ public class CalendarView extends View {
 	private void drawTaskDueTime(Canvas canvas, float leftEdge, 
 			float rightEdge, long end)
 	{
-		int flags = DateUtils.FORMAT_SHOW_TIME;
-		flags |= DateUtils.FORMAT_CAP_NOON_MIDNIGHT;
-		if (DateFormat.is24HourFormat(getContext())) 
-			flags |= DateUtils.FORMAT_24HOUR;
-		taskDueTime = DateUtils.formatDateTime(getContext(), 
-				(long) end, flags);
+		String taskDueTime = TimeUtils.formatTime(end);
 		canvas.drawText(taskDueTime, leftEdge + distanceBetweenTasks,
 				findYPosition(end)+(15*scale), dayNameTextPaint);
 	}
@@ -380,11 +377,11 @@ public class CalendarView extends View {
 				// drawing another "task" bar on top of the real task bar.
 				for (TaskWorkInterval twi : t.getWorkIntervals()) {
 					drawTask(canvas, numColumns, col, twi.getStartMillis(),
-							twi.getEndMillis(), "");
+							twi.getEndMillis(), null);
 					// certain work intervals should be extra dark
 					if (twi.isCertain())
 						drawTask(canvas, numColumns, col, twi.getStartMillis(),
-								twi.getEndMillis(), "");
+								twi.getEndMillis(), null);
 				}
 			}
 		}
