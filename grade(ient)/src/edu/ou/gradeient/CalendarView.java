@@ -57,6 +57,7 @@ public class CalendarView extends View {
 	private Paint dayNumberTextPaint;
 	private Paint currentTimeBarPaint;
 	private Paint taskBackgroundPaint;
+	private Paint taskNamePaint;
 	
 	private DisplayMetrics displaymetrics = getResources().getDisplayMetrics();
 	
@@ -212,6 +213,9 @@ public class CalendarView extends View {
 		canvas.drawRoundRect(taskBounds, taskRectangleRounding,  
 				taskRectangleRounding,  taskBackgroundPaint);
 		drawTaskDueTime(canvas, leftEdge, rightEdge, end);
+		//TODO: Don't hardcode this value!
+		canvas.drawText(taskName, leftEdge, findYPosition(start) - 2, taskNamePaint);
+//		System.out.println(taskName);
 	}
 	
 	private void setTaskTitle(String title, float leftEdge, float rightEdge)
@@ -325,6 +329,10 @@ public class CalendarView extends View {
 		taskBackgroundPaint = new Paint();
 		taskBackgroundPaint.setARGB(85, 100, 0, 100);
 		taskBackgroundPaint.setStyle(Paint.Style.FILL);
+		
+		//same settings as day name paint, but set up as a separate
+		//paint object so that we can change it later if we want
+		taskNamePaint = new Paint(dayNameTextPaint);
 	}
 
 	/**Rough implementation of onMeasure method*/
