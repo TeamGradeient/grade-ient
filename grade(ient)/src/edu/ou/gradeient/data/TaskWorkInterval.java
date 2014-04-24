@@ -44,7 +44,7 @@ public class TaskWorkInterval extends DateTimeInterval
 				ContentResolver.CURSOR_ITEM_BASE_TYPE + 
 				"/vnd." + TaskProvider.AUTHORITY + "_task_work_intervals";
 
-		/* default */ static final String TABLE = "Task_Work_Interval";
+		public static final String TABLE = "Task_Work_Interval";
 		public static final String TASK_ID = "task_id";
 		public static final String START_INSTANT = Task.Schema.START_INSTANT;
 		public static final String END_INSTANT = Task.Schema.END_INSTANT;
@@ -84,9 +84,11 @@ public class TaskWorkInterval extends DateTimeInterval
 		}
 		
 		
-		/** URI for list of hybrid work times/tasks. The only valid form is
-		 * <code>CONTENT_URI_HYBRID/#/##</code>, work times in range # to ##
-		 * (in milliseconds since epoch). */
+		/** URI for list of hybrid work times/tasks. Valid URIs for query: <ul>
+		 * <li><code>CONTENT_URI_HYBRID</code>
+		 * <li><code>CONTENT_URI_HYBRID/#/##</code>: work times in range # to ##
+		 * (in milliseconds since epoch). 
+		 */
 		public static final Uri CONTENT_URI_HYBRID = Uri.withAppendedPath(
 				TaskProvider.CONTENT_URI, "work_intervals_tasks");
 		/** MIME type for list of hybrid work times/tasks */
@@ -106,7 +108,7 @@ public class TaskWorkInterval extends DateTimeInterval
 		
 		/** Special join table for getting work intervals with task names
 		 * and subjects ordered by start date */
-		static final String TABLE_HYBRID = TABLE + " inner join " 
+		public static final String TABLE_HYBRID = TABLE + " inner join " 
 				+ Task.Schema.TABLE + " on " + TABLE + "." + TASK_ID + " = "
 				+ Task.Schema.TABLE + "." + Task.Schema._ID;
 		
@@ -116,6 +118,10 @@ public class TaskWorkInterval extends DateTimeInterval
 			Task.Schema.TABLE + "." + Task.Schema.SUBJECT_NAME, 
 			TABLE + "." + START_INSTANT, TABLE + "." + END_INSTANT, 
 			TABLE + "." + CERTAINTY };
+		
+		public static final int COL_START_HYBRID = 3;
+		public static final int COL_END_HYBRID = 4;
+		public static final int COL_CERTAINTY_HYBRID = 5;
 		
 		/** Default sort order for TABLE_HYBRID */
 		public static final String SORT_ORDER_DEFAULT_HYBRID = 

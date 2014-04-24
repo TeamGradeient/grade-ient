@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.content.ContentUris;
 import android.content.Intent;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -14,6 +15,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.TextView;
 import edu.ou.gradeient.data.Task;
+import edu.ou.gradeient.data.TaskWorkInterval;
 
 // This is somewhat based off of com.android.calendar.event.EditEventView
 
@@ -138,7 +140,7 @@ public class EditTaskActivity extends Activity {
 	}
 	
 	/**
-	 * Fill the 
+	 * Fill the task and status from the saved instance state
 	 * @param savedInstanceState The bundle passed to onCreate
 	 */
 	private void setTaskFromBundle(Bundle savedInstanceState) {
@@ -184,9 +186,20 @@ public class EditTaskActivity extends Activity {
 				fillTaskNonDateFields();
 				switch (taskStatus) {
 					case Extras.TaskStatus.NEW_TASK:
-						getContentResolver().insert(
+						Uri taskUri = getContentResolver().insert(
 								Task.Schema.CONTENT_URI, 
 								task.toContentValues());
+						//TODO TEMPORARY: add some random work intervals to the
+						// task and put them in the database.
+						long id = ContentUris.parseId(taskUri);
+						Log.i(TAG, "Old id: " + task.getId() + "; new ID: " + id);
+						task.setId(id);
+						task.addRandomWorkIntervals();
+						for (TaskWorkInterval twi : task.getWorkIntervals()) {
+							getContentResolver().insert(
+									TaskWorkInterval.Schema.CONTENT_URI,
+									twi.toContentValues());
+						}
 						break;
 					case Extras.TaskStatus.EDIT_TASK:
 						getContentResolver().update(

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Random;
 import java.util.TreeSet;
 
 import org.joda.time.MutableInterval;
@@ -140,22 +141,8 @@ public class Task extends DateTimeInterval
 	}
 	
 	/**
-	 * Copy constructor
-	 * @param other Task to copy
-	 */
-	public Task (Task other) {
-		id = other.id;
-		name = other.name;
-		subject = other.subject;
-		notes = other.notes;
-		isDone = other.isDone;
-		interval = new MutableInterval(other.interval);
-	}
-	
-	/**
 	 * Creates a Task from a cursor. Assumes the cursor is already pointing
 	 * to the correct row.
-	 * TODO is this even a correct place to put this?
 	 * @param taskCursor A cursor for the Task table in the database
 	 * @param workCursor A cursor for the work times for this task
 	 * (can be null)
@@ -233,6 +220,18 @@ public class Task extends DateTimeInterval
 	 */
 	public long getId() {
 		return id;
+	}
+	
+	/**
+	 * Sets the ID of the task. Only valid if the previous ID was NEW_TASK_ID.
+	 * @param id The new ID, presumably returned from a query
+	 * @throws IllegalArgumentException if the ID was already set
+	 */
+	public void setId(long id) {
+		if (this.id != NEW_TASK_ID)
+			throw new IllegalArgumentException("Cannot set task ID unless "
+					+ "previous ID was NEW_TASK_ID");
+		this.id = id;
 	}
 	
 	/**
@@ -320,7 +319,28 @@ public class Task extends DateTimeInterval
 		if (!interval.contains(workInterval.getInterval()))
 			throw new IllegalArgumentException("Work interval out of task "
 					+ "start/end interval");
+		//TODO do we want to check if it overlaps other work intervals?
 		workIntervals.add(workInterval);
+	}
+	
+	/**
+	 * This is a temporary method...
+	 */
+	public void addRandomWorkIntervals() {
+		long start = getStartMillis();
+		long length = interval.toDurationMillis();
+		Random r = new Random();
+		for (int i = 0; i < 3; ++i) {
+			long randStart = r.nextLong() % length;
+			randStart = start + (randStart < 0 ? -randStart : randStart);
+			long randEnd = r.nextLong() % length;
+			randEnd = start + (randEnd < 0 ? -randEnd : randEnd);
+			boolean certain = r.nextBoolean();
+			if (randStart < randEnd)
+				addWorkInterval(new TaskWorkInterval(id, randStart, randEnd, certain));
+			else
+				addWorkInterval(new TaskWorkInterval(id, randEnd, randStart, certain));
+		}
 	}
 	
 	/**
@@ -402,7 +422,7 @@ public class Task extends DateTimeInterval
 	public void setEndTime(int hour, int minute, 
 			boolean incDayIfEndBeforeStart) {
 		super.setEndTime(hour, minute, incDayIfEndBeforeStart);
-		fixWorkIntervals(); //TODO anything else for this one?
+		fixWorkIntervals(); 
 	}
 	
 	/**

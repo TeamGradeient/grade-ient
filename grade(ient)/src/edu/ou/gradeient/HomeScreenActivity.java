@@ -12,10 +12,10 @@ import android.content.Intent;
 import android.content.Loader;
 import android.content.res.Configuration;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.widget.DrawerLayout;
-import android.text.Layout;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -24,6 +24,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.SimpleCursorAdapter.ViewBinder;
 import android.widget.TextView;
 import edu.ou.gradeient.data.Task;
 import edu.ou.gradeient.data.TaskWorkInterval;
@@ -37,9 +38,11 @@ public class HomeScreenActivity extends Activity
 	
 	// These are the columns to get from the database for each view
 	private static final String[] TASK_LOADER_COLUMNS = { Task.Schema._ID,
-		Task.Schema.SUBJECT_NAME, Task.Schema.NAME, Task.Schema.END_INSTANT };
+		Task.Schema.SUBJECT_NAME, Task.Schema.NAME, Task.Schema.END_INSTANT,
+		Task.Schema.IS_DONE };
 	private static final String[] WORK_LOADER_COLUMNS = 
 			TaskWorkInterval.Schema.COLUMNS_HYBRID;
+	private static final int WHITE_TRANSPARENT = Color.parseColor("#99FFFFFF");
 	// ID for the loader for each view
 	private static final int TASK_LOADER_ID = 1;
 	private static final int WORK_LOADER_ID = 2;
@@ -77,7 +80,7 @@ public class HomeScreenActivity extends Activity
 		actionBar.setDisplayShowTitleEnabled(true);
 		actionBar.setDisplayHomeAsUpEnabled(true);
 		//TODO requires min API level 14? (probably solvable by using
-		// support activity
+		// support activity)
 //		actionBar.setHomeButtonEnabled(true);
 		
 		weekdayMonthDate = (TextView) findViewById(R.id.home_date);
@@ -91,39 +94,91 @@ public class HomeScreenActivity extends Activity
 		// set up CursorAdapters
 		
 		// mappings from view IDs to column names
-		int[] viewIds = { R.id.list_subject, R.id.list_name,
+		int[] workViewIds = { R.id.list_subject, R.id.list_name,
 				R.id.list_date, R.id.list_time };
 		String[] workColumns = { Task.Schema.SUBJECT_NAME, Task.Schema.NAME,
 				TaskWorkInterval.Schema.START_INSTANT,
 				TaskWorkInterval.Schema.START_INSTANT };
 		//TODO how to do lighter/darker based on priority?
-		workAdapter = new SimpleCursorAdapter(this, R.layout.home_list_item,
-				null, workColumns, viewIds, 0) {
+		workAdapter = new SimpleCursorAdapter(this, R.layout.home_work_time_list_item,
+				null, workColumns, workViewIds, 0);
+		workAdapter.setViewBinder(new ViewBinder() {
 			@Override
-			public void setViewText(TextView v, String text) {
-				//TODO fix this method
-				if (v.getId() == R.id.list_date) 
-					text = TimeUtils.formatMonthDayTodayTomorrow(Long.parseLong(text));
-				else if (v.getId() == R.id.list_time)
-					text = TimeUtils.formatTime(Long.parseLong(text));
-				v.setText(text);
+			public boolean setViewValue(View view, Cursor cursor,
+					int columnIndex) {
+				String value = cursor.getString(columnIndex);
+				// For uncertain work times, set all the text views to "lighter"
+				// text than usual.
+				String certainStr = cursor.getString(
+						TaskWorkInterval.Schema.COL_CERTAINTY_HYBRID);
+				boolean certain = certainStr.length() > 0 
+						&& certainStr.charAt(0) == '1';
+				if (!certain && view instanceof TextView)
+					((TextView) view).setTextColor(WHITE_TRANSPARENT);
+				
+				// Do any special setting of text
+				switch (view.getId()) {
+					case R.id.list_date:
+						((TextView)view).setText(TimeUtils.formatMonthDayTodayTomorrow(
+								Long.parseLong(value)));
+						return true;
+					case R.id.list_time:
+						// For the time field, we need to display a time range,
+						// start time - end time.
+						long start = Long.parseLong(value);
+						long end = Long.parseLong(cursor.getString(
+								TaskWorkInterval.Schema.COL_END_HYBRID));
+						((TextView)view).setText(TimeUtils.formatTime(start)
+								+ " - " + TimeUtils.formatTime(end));
+						return true;
+				}
+				// If the view ID was not one of the ones above, this view binder
+				// didn't handle binding the content (probably because it's
+				// basic text that can be bound as-is).
+				return false;
 			}
-		};
+		});
 		upcomingWork.setAdapter(workAdapter);
 		
+		// mappings from view IDs to column names: the row layout itself is
+		// mapped to "is done" so that we can set its background to
+		// strikethrough if the task is done
+		int[] taskViewIds = { R.id.list_subject, R.id.list_name,
+				R.id.list_date, R.id.list_time, R.id.list_layout };
 		String[] taskColumns = { Task.Schema.SUBJECT_NAME, Task.Schema.NAME,
-				Task.Schema.END_INSTANT, Task.Schema.END_INSTANT };
+				Task.Schema.END_INSTANT, Task.Schema.END_INSTANT,
+				Task.Schema.IS_DONE };
 		taskAdapter = new SimpleCursorAdapter(this, R.layout.home_list_item, 
-				null, taskColumns, viewIds, 0) {
+				null, taskColumns, taskViewIds, 0);
+		taskAdapter.setViewBinder(new ViewBinder() {
 			@Override
-			public void setViewText(TextView v, String text) {
-				if (v.getId() == R.id.list_date) 
-					text = TimeUtils.formatMonthDayTodayTomorrow(Long.parseLong(text));
-				else if (v.getId() == R.id.list_time)
-					text = TimeUtils.formatTime(Long.parseLong(text));
-				v.setText(text);
+			public boolean setViewValue(View view, Cursor cursor,
+					int columnIndex) {
+				String value = cursor.getString(columnIndex);
+				switch (view.getId()) {
+					case R.id.list_date:
+						((TextView)view).setText(TimeUtils.formatMonthDayTodayTomorrow(
+								Long.parseLong(value)));
+						return true;
+					case R.id.list_time:
+						((TextView)view).setText(TimeUtils.formatTime(
+								Long.parseLong(value)));
+						return true;
+					case R.id.list_layout:
+						boolean isDone = false;
+						try { 
+							isDone = Integer.parseInt(value) == 1; 
+						} catch (NumberFormatException ex) { 
+						}
+						// bg_strikethrough is a special 9-patch drawable that
+						// makes it look like the text is struck through
+						if (isDone)
+							view.setBackgroundResource(R.drawable.bg_strikethrough);
+						return true;
+				}
+				return false;
 			}
-		};
+		});
 		upcomingTasks.setAdapter(taskAdapter);
 		//Add a listener that will be called when an upcoming task is clicked
 		upcomingTasks.setOnItemClickListener(new TaskItemClickListener());
@@ -166,13 +221,14 @@ public class HomeScreenActivity extends Activity
 	
 	private void updateView() {
 		long time = System.currentTimeMillis();
-		weekdayMonthDate.setText(TimeUtils.formatWeekdayMonthDay(time));
+//		weekdayMonthDate.setText(TimeUtils.formatWeekdayMonthDay(time));
 		// make sure date is not ellipsized
-		Layout layout = weekdayMonthDate.getLayout();
-		if (layout != null && layout.getEllipsisCount(0) != 0) {
+		//TODO this isn't working
+//		Layout layout = weekdayMonthDate.getLayout();
+//		if (layout != null && layout.getEllipsisCount(0) != 0) {
 			// use a shorter format if date was ellipsized
 			weekdayMonthDate.setText(TimeUtils.formatWeekdayMonthDayShorter(time));
-		}
+//		}
 		// re-init loaders
 		getLoaderManager().restartLoader(TASK_LOADER_ID, null, this);
 		getLoaderManager().restartLoader(WORK_LOADER_ID, null, this);
@@ -276,7 +332,8 @@ public class HomeScreenActivity extends Activity
 						TASK_LOADER_COLUMNS, null, null, null);
 			case WORK_LOADER_ID:
 				return new CursorLoader(this, 
-						TaskWorkInterval.Schema.getUriForRangeHybrid(now, later),
+						TaskWorkInterval.Schema.CONTENT_URI_HYBRID,
+//						TaskWorkInterval.Schema.getUriForRangeHybrid(now, later),
 						WORK_LOADER_COLUMNS, null, null, null);
 			case NEXT_WORK_LOADER_ID:
 				// For some reason, there's not a limit parameter for 
@@ -301,11 +358,11 @@ public class HomeScreenActivity extends Activity
 			// Cursor with the SimpleCursorAdapter.
 			case TASK_LOADER_ID:
 				taskAdapter.swapCursor(data);
-				Log.d(TAG, "Tasks loaded: " + data.getCount());
+				Log.i(TAG, "Tasks loaded: " + data.getCount());
 				break;
 			case WORK_LOADER_ID:
 				workAdapter.swapCursor(data);
-				Log.d(TAG, "Work times loaded: " + data.getCount());
+				Log.i(TAG, "Work times loaded: " + data.getCount());
 				break;
 			case NEXT_WORK_LOADER_ID:
 				data.moveToNext();
