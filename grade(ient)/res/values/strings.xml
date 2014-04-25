@@ -36,5 +36,6 @@
 	<string name="home_next_definitely">definitely work on</string>
 	<string name="home_next_maybe">definitely work on</string>
 	<string name="home_next_task">Next task name</string>
+	<string name="due_">due </string>
 	
 </resources>

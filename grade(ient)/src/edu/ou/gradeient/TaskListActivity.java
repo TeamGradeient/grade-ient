@@ -1,24 +1,25 @@
 package edu.ou.gradeient;
 
-import edu.ou.gradeient.data.Task;
+import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.app.LoaderManager;
+import android.content.ContentUris;
 import android.content.CursorLoader;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
-import android.text.format.DateFormat;
-import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
-import android.widget.AdapterView;
+import edu.ou.gradeient.data.Task;
 
 // loader manager methods from 
 // http://www.androiddesignpatterns.com/2012/07/understanding-loadermanager.html
@@ -27,7 +28,8 @@ import android.widget.AdapterView;
  * Activity for viewing a list of tasks from the database
  */
 public class TaskListActivity extends ListActivity 
-		implements LoaderManager.LoaderCallbacks<Cursor> {
+		implements LoaderManager.LoaderCallbacks<Cursor>,
+		AdapterView.OnItemLongClickListener{
 	
 	private static final String TAG = "TaskListActivity";
 	
@@ -38,8 +40,6 @@ public class TaskListActivity extends ListActivity
 		Task.Schema.NAME, Task.Schema.END_INSTANT };
 	
 	private static final int LOADER_ID = 1;
-	/** Callbacks to interact with the LoaderManager */
-	private LoaderManager.LoaderCallbacks<Cursor> callbacks;
 	/** Adapter that binds the data to the ListView */
 	private SimpleCursorAdapter adapter;
 	
@@ -65,19 +65,10 @@ public class TaskListActivity extends ListActivity
 				viewIDs, 0) {
 			@Override
 			public void setViewText(TextView v, String text) {
-				//TODO is this a good formatting method or should we use
-				// Joda time? (the place where I got this code from mentioned
-				// something a hack being needed for time zone support)
 				if (v.getId() == android.R.id.text2) {
 					// text2 is the line for the date, so format the date properly
 					// instead of displaying a number in milliseconds.
-					int flags = DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_WEEKDAY
-							| DateUtils.FORMAT_ABBREV_MONTH | DateUtils.FORMAT_ABBREV_WEEKDAY
-							| DateUtils.FORMAT_SHOW_TIME;
-					if (DateFormat.is24HourFormat(getApplicationContext()))
-						flags |= DateUtils.FORMAT_24HOUR;
-					text = DateUtils.formatDateTime(getApplicationContext(),
-							Long.parseLong(text), flags);
+					text = TimeUtils.formatTimeDate(Long.parseLong(text));
 				}
 				v.setText(text);
 			}
@@ -86,23 +77,19 @@ public class TaskListActivity extends ListActivity
 		// Associate the (now empty) adapter with the ListView.
 		setListAdapter(adapter);
 
-		// The Activity (which implements the LoaderCallbacks<Cursor> 
-		// interface) is the callbacks object through which we will interact
-		// with the LoaderManager. The LoaderManager uses this object to
-		// instantiate the Loader and to notify the client when data is made
-		// available/unavailable.
-		callbacks = this;
-
-		// Initialize the Loader with id '1' and callbacks 'mCallbacks'.
+		// Initialize the Loader with id LOADER_ID and callbacks this.
 		// If the loader doesn't already exist, one is created. Otherwise,
 		// the already created Loader is reused. In either case, the
 		// LoaderManager will manage the Loader across the Activity/Fragment
 		// lifecycle, will receive any new loads once they have completed,
-		// and will report this new data back to the 'mCallbacks' object.
-		getLoaderManager().initLoader(LOADER_ID, null, callbacks);
+		// and will report new data back to this object (which implements
+		// the LoaderCallbacks<Cursor> interface that tells the LoaderManager
+		// how to instantiate loaders and allows it to notify the client when
+		// data is made available/unavailable).
+		getLoaderManager().initLoader(LOADER_ID, null, this);
 		
 		//Add a listener to handle long clicks
-		getListView().setOnItemLongClickListener(new LongClickListener());
+		getListView().setOnItemLongClickListener(this);
 	}
 
 	@Override
@@ -143,16 +130,32 @@ public class TaskListActivity extends ListActivity
 		startActivityForResult(intent, EDIT_REQUEST);
 	}
 	
-	private class LongClickListener 
-	implements AdapterView.OnItemLongClickListener
-	{
-		@Override
-		public boolean onItemLongClick(AdapterView<?> parent, View view, 
-				int position,long id) {
-			System.out.println("Long click at position " + position);
-			//TODO: Do something with the click!
-			return true;
-		}
+	@Override
+	public boolean onItemLongClick(AdapterView<?> parent, View view, 
+			int position, final long id) {
+		//TODO USING LONG CLICK FOR DELETE IS NOT PERMANENT
+		
+		// Get the task's name to include in the dialog
+		Cursor cursor = (Cursor)adapter.getItem(position);
+		if (cursor == null) return false;
+		int column = cursor.getColumnIndex(Task.Schema.NAME);
+		if (column == -1) return false;
+		String name = cursor.getString(column);
+		
+		new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_LIGHT)
+		.setTitle("Delete Task")
+		.setMessage("Are you sure you want to delete \"" + name + "\"?")
+		.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) { 
+				getContentResolver().delete(
+						ContentUris.withAppendedId(Task.Schema.CONTENT_URI, id),
+						null, null);
+			}
+		})
+		.setNegativeButton(android.R.string.no, null)
+		.setIcon(android.R.drawable.ic_dialog_alert)
+		.show();
+		return true;
 	}
 	
 	@Override

@@ -13,9 +13,11 @@ import android.content.Loader;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.widget.DrawerLayout;
+import android.text.Layout;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -68,6 +70,7 @@ public class HomeScreenActivity extends Activity
 	private TextView weekdayMonthDate;
 	private TextView nextWorkPriority;
 	private TextView nextWorkTitle;
+	private TextView nextWorkDue;
 	private ListView upcomingTasks;
 	private ListView upcomingWork;
 	
@@ -79,13 +82,13 @@ public class HomeScreenActivity extends Activity
 		actionBar.setTitle(R.string.app_name);
 		actionBar.setDisplayShowTitleEnabled(true);
 		actionBar.setDisplayHomeAsUpEnabled(true);
-		//TODO requires min API level 14? (probably solvable by using
-		// support activity)
-//		actionBar.setHomeButtonEnabled(true);
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+			actionBar.setHomeButtonEnabled(true);
 		
 		weekdayMonthDate = (TextView) findViewById(R.id.home_date);
 		nextWorkPriority = (TextView)findViewById(R.id.home_next_priority);
 		nextWorkTitle = (TextView) findViewById(R.id.home_next_task_title);
+		nextWorkDue = (TextView)findViewById(R.id.home_next_due);
 		upcomingWork = (ListView)findViewById(R.id.upcoming_work);		
 		upcomingTasks = (ListView)findViewById(R.id.upcoming_tasks);
 		drawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
@@ -119,7 +122,7 @@ public class HomeScreenActivity extends Activity
 				// Do any special setting of text
 				switch (view.getId()) {
 					case R.id.list_date:
-						((TextView)view).setText(TimeUtils.formatMonthDayTodayTomorrow(
+						((TextView)view).setText(TimeUtils.formatMonthDayToday(
 								Long.parseLong(value)));
 						return true;
 					case R.id.list_time:
@@ -129,7 +132,7 @@ public class HomeScreenActivity extends Activity
 						long end = Long.parseLong(cursor.getString(
 								TaskWorkInterval.Schema.COL_END_HYBRID));
 						((TextView)view).setText(TimeUtils.formatTime(start)
-								+ " - " + TimeUtils.formatTime(end));
+								+ '-' + TimeUtils.formatTime(end));
 						return true;
 				}
 				// If the view ID was not one of the ones above, this view binder
@@ -157,7 +160,7 @@ public class HomeScreenActivity extends Activity
 				String value = cursor.getString(columnIndex);
 				switch (view.getId()) {
 					case R.id.list_date:
-						((TextView)view).setText(TimeUtils.formatMonthDayTodayTomorrow(
+						((TextView)view).setText(TimeUtils.formatMonthDayToday(
 								Long.parseLong(value)));
 						return true;
 					case R.id.list_time:
@@ -220,19 +223,13 @@ public class HomeScreenActivity extends Activity
 	}
 	
 	private void updateView() {
-		long time = System.currentTimeMillis();
-//		weekdayMonthDate.setText(TimeUtils.formatWeekdayMonthDay(time));
-		// make sure date is not ellipsized
-		//TODO this isn't working
-//		Layout layout = weekdayMonthDate.getLayout();
-//		if (layout != null && layout.getEllipsisCount(0) != 0) {
-			// use a shorter format if date was ellipsized
-			weekdayMonthDate.setText(TimeUtils.formatWeekdayMonthDayShorter(time));
-//		}
 		// re-init loaders
 		getLoaderManager().restartLoader(TASK_LOADER_ID, null, this);
 		getLoaderManager().restartLoader(WORK_LOADER_ID, null, this);
 		getLoaderManager().restartLoader(NEXT_WORK_LOADER_ID, null, this);
+		// updating the time here and immediately making sure it's not
+		// ellipsized doesn't work, so the current hack to get around the issue
+		// is putting the time update in onCreateLoader/onLoadFinished
 	}
 
 	@Override
@@ -318,8 +315,11 @@ public class HomeScreenActivity extends Activity
 
 	@Override
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
-		// Display tasks and work times in the next two weeks
+		// Update the time every time there's a query (hack...)
 		long now = System.currentTimeMillis();
+		weekdayMonthDate.setText(TimeUtils.formatWeekdayMonthDay(now));
+		
+		// Display tasks and work times in the next two weeks
 		long later = new DateTime(now).plusWeeks(2).getMillis();
 		System.out.println("Now: " + now + ", later: " + later);
 		System.out.println(Task.Schema.getUriForRange(now, later));
@@ -351,6 +351,17 @@ public class HomeScreenActivity extends Activity
 
 	@Override
 	public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+		// Every time a query returns, make sure that the text that was set
+		// in onCreateLoader didn't get ellipsized, and fix it if it did.
+		// This is a hack to get around the fact that getLayout can return null
+		// when the layout has just been changed...
+		Layout layout = weekdayMonthDate.getLayout();
+		if (layout != null && layout.getEllipsisCount(0) != 0) {
+			// use a shorter format if date was ellipsized
+			weekdayMonthDate.setText(TimeUtils.formatWeekdayMonthDayShorter(
+					System.currentTimeMillis()));
+		}
+		
 		int id = loader.getId();
 		switch (id) {
 			// The asynchronous load is complete and the data is now
@@ -365,6 +376,8 @@ public class HomeScreenActivity extends Activity
 				Log.i(TAG, "Work times loaded: " + data.getCount());
 				break;
 			case NEXT_WORK_LOADER_ID:
+				if (data.getCount() == 0)
+					break;
 				data.moveToNext();
 				TaskWorkInterval twi;
 				try {

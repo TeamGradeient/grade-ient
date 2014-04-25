@@ -60,7 +60,7 @@
             <RelativeLayout
                 android:id="@+id/home_next_task"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_marginRight="@dimen/home_padding"
                 android:layout_weight="1.7"
                 android:background="@color/holo_orange_light"
@@ -71,10 +71,9 @@
                     style="@style/home_text_s"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
+                    android:layout_alignParentLeft="true"
                     android:layout_alignParentTop="true"
-                    android:paddingBottom="2dp"
-                    android:paddingEnd="6dp"
+                    android:paddingEnd="4dp"
                     android:text="@string/home_next_now" />
 
                 <TextView
@@ -82,8 +81,9 @@
                     style="@style/home_text_xs"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_below="@id/home_next_now"
-                    android:paddingLeft="6dp"
+                    android:layout_toRightOf="@id/home_next_now"
+                    android:layout_alignBaseline="@id/home_next_now"
+                    android:paddingLeft="4dp"
                     android:ellipsize="end"
                     android:singleLine="true"
                     android:text="@string/home_next_definitely" />
@@ -93,18 +93,30 @@
                     style="@style/home_text_l"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_below="@id/home_next_priority"
-                    android:paddingLeft="4dp"
+                    android:layout_below="@id/home_next_now"
+                    android:paddingLeft="8dp"
                     android:maxLines="2"
                     android:text="@string/home_next_task" />
+                
+                <TextView
+                    android:id="@+id/home_next_due"
+                    style="@style/home_text_m"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@id/home_next_task_title"
+                    android:layout_alignParentRight="true" 
+                    android:text="@string/due_"
+                    android:visibility="gone" />
+                <!-- TODO: change visibility of due once we can fill it properly -->
             </RelativeLayout>
 
             <!-- Go to calendar view: background, text, button -->
 
-            <RelativeLayout
+            <LinearLayout
                 android:id="@+id/home_goto_calendar_button"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
                 android:layout_weight="1"
                 android:background="@color/holo_green_dark"
                 android:clickable="true"
@@ -117,17 +129,16 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:lines="2"
-                    android:paddingBottom="2dp"
                     android:text="@string/home_goto_calendar_label"
                     android:textColor="@android:color/white" />
 
                 <ImageView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentRight="true"
-                    android:layout_alignParentBottom="true"
+                    android:layout_gravity="right"
+                    android:paddingTop="2dp"
                     android:src="@drawable/ic_action_forward" />
-            </RelativeLayout>
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Work times list -->

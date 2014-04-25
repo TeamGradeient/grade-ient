@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.Random;
 import java.util.TreeSet;
 
+import org.joda.time.MutableDateTime;
 import org.joda.time.MutableInterval;
 import org.joda.time.ReadableInterval;
 
@@ -327,20 +328,47 @@ public class Task extends DateTimeInterval
 	 * This is a temporary method...
 	 */
 	public void addRandomWorkIntervals() {
-		long start = getStartMillis();
-		long length = interval.toDurationMillis();
 		Random r = new Random();
-		for (int i = 0; i < 3; ++i) {
-			long randStart = r.nextLong() % length;
-			randStart = start + (randStart < 0 ? -randStart : randStart);
-			long randEnd = r.nextLong() % length;
-			randEnd = start + (randEnd < 0 ? -randEnd : randEnd);
-			boolean certain = r.nextBoolean();
-			if (randStart < randEnd)
-				addWorkInterval(new TaskWorkInterval(id, randStart, randEnd, certain));
-			else
-				addWorkInterval(new TaskWorkInterval(id, randEnd, randStart, certain));
+		int startDay = getStart().getDayOfYear();
+		int endDay = getEnd().getDayOfYear();
+		if (endDay - startDay < 3) {
+			addRandomWork(r, getStartMillis(), getEndMillis(), false);
+			return;
 		}
+		
+		MutableDateTime day = new MutableDateTime(getStartMillis());
+		day.setMillisOfDay(0);
+		day.addDays(1);
+		addRandomWork(r, getStartMillis(), day.getMillis() - 1, true);
+		while (day.getDayOfYear() < endDay) {
+			long start = day.getMillis();
+			day.addDays(1);
+			long end = day.getMillis() - 1;
+			addRandomWork(r, start, end, true);
+		}
+		addRandomWork(r, day.getMillis(), getEndMillis(), true);
+	}
+	
+	private void addRandomWork(Random r, long start, long end, boolean maybe) {
+		if (maybe && !r.nextBoolean())
+			return;
+		int length = (int)(end - start);
+		long randStart = start + r.nextInt(length) % length;
+		long randEnd = start + r.nextInt(length) % length;
+		if (randEnd < randStart) {
+			long temp = randStart;
+			randStart = randEnd;
+			randEnd = temp;
+		}
+		// intervals < 30 min. will look silly
+		long minLength = 30*60*1000;
+		if (randEnd - randStart < minLength) {
+			if (randEnd + minLength > end)
+				randStart = Math.max(start, end - minLength);
+			randEnd = Math.min(end, randEnd + minLength);
+		}
+		boolean certain = r.nextBoolean();
+		addWorkInterval(new TaskWorkInterval(id, randStart, randEnd, certain));
 	}
 	
 	/**

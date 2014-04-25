@@ -28,20 +28,6 @@ import android.widget.TextView;
 import edu.ou.gradeient.data.Task;
 import edu.ou.gradeient.data.TaskWorkInterval;
 
-/*
- * There is a TreeSet of Tasks called "tasks" as a member.
- * TreeSet means the tasks stay sorted.
- * Get the tasks ending after a certain time by:
- * 		tasks.tailSet(new Task(..., end time in millis, ...))
- * The tasks have their work times pulled too in the init method.
- * The set will get updated whenever the activity gets created/destroyed
- *   (which I think is pretty frequent).
- * If you want them updated on data change, you might be able to add some
- * sort of notification/event listening thing, or an update method 
- * CalendarActivity can call (CalendarTaskView's tasks would have to be
- * static then too).
- */
-
 public class CalendarView extends View {
 	private static final String TAG = "CalendarTaskView";
 	
@@ -116,7 +102,6 @@ public class CalendarView extends View {
 		setDisplayDates(startMillis, endMillis);
 
 		//TODO figure out a better long-term solution
-		taskCursor.moveToPosition(-1);
 		// get all tasks in the date range shown, temporarily indexed by ID
 		HashMap<Long, Task> taskMap = new HashMap<Long, Task>();
 		Interval interval = new Interval(startTime, endTime);
@@ -130,7 +115,6 @@ public class CalendarView extends View {
 			}
 		}
 		// match up work times with tasks
-		workCursor.moveToPosition(-1);
 		while (workCursor.moveToNext()) {
 			try {
 				TaskWorkInterval twi = new TaskWorkInterval(workCursor);
@@ -213,8 +197,8 @@ public class CalendarView extends View {
 				taskRectangleRounding,  taskBackgroundPaint);
 		if (taskName != null) {
 			drawTaskDueTime(canvas, leftEdge, rightEdge, end);
-			//TODO: Don't hardcode this value!
-			canvas.drawText(taskName, leftEdge, findYPosition(start) - 2, taskNamePaint);
+			canvas.drawText(taskName, leftEdge, findYPosition(start) - 2*scale, 
+					taskNamePaint);
 		}
 	}
 	

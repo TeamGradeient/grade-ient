@@ -4,7 +4,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.ReadableInterval;
-import org.joda.time.chrono.ISOChronology;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
@@ -16,38 +15,42 @@ import android.widget.TextView;
  * Handling time is fun! Let's make utility methods for it!
  */
 public class TimeUtils {
+	/** M/d (4/25) */
 	private static final DateTimeFormatter MONTH_DAY_NUMERIC =
 			DateTimeFormat.forPattern("M/d");
+	/** h:mma (8:53am, 8:53pm) */
 	private static final DateTimeFormatter TIME_HOUR_MIN_AM =
 			DateTimeFormat.forPattern("h:mma");
-	private static final DateTimeFormatter TIME_HOUR_MIN_24_HOUR =
+	/** HH:mm (08:53, 20:53) */
+	private static final DateTimeFormatter TIME_HOUR_MIN_24 =
 			DateTimeFormat.forPattern("HH:mm");
+	/** Weekday, Month d (Friday, April 25) */
 	private static final DateTimeFormatter WEEKDAY_MONTH_DAY =
 			new DateTimeFormatterBuilder().appendDayOfWeekText()
-			.appendLiteral(", ").appendMonthOfYearShortText().appendPattern(". d")
+			.appendLiteral(", ").appendMonthOfYearText().appendPattern(" d")
 			.toFormatter();
-	private static final DateTimeFormatter WEEKDAY_MONTH_DAY_SHORT =
+	/** Weekday, Mon d (Friday, Apr 25) */
+	private static final DateTimeFormatter WEEKDAY_MON_DAY =
+			new DateTimeFormatterBuilder().appendDayOfWeekText()
+			.appendLiteral(", ").appendMonthOfYearShortText().appendPattern(" d")
+			.toFormatter();
+	/** Weekd, Mon d (Fri, Apr 25) */
+	private static final DateTimeFormatter WEEKD_MON_DAY =
 			new DateTimeFormatterBuilder().appendDayOfWeekShortText()
-			.appendLiteral(", ").appendMonthOfYearShortText().appendPattern(". d")
+			.appendLiteral(", ").appendMonthOfYearShortText().appendPattern(" d")
 			.toFormatter();
-	private static final DateTimeFormatter WEEKDAY_MONTH_DAY_YEAR =
+	/** Weekd, Mon d, YYYY (Fri, Apr 25, 2014) */
+	private static final DateTimeFormatter WEEKD_MON_DAY_YEAR =
 			new DateTimeFormatterBuilder().appendPattern("EEE, ")
 			.append(DateTimeFormat.mediumDate()).toFormatter();
-	private static final ISOChronology chron = ISOChronology.getInstance();
 	//TODO will break with time zones
 	private static long todayEnd = 0;
 	private static long tomorrowEnd = 0;
+	private static long yearBegin = 0;
+	private static long yearEnd = 0;
 	static {
 		updateTodayEnd();
-	}
-	
-	private static void updateTodayEnd() {
-		if (System.currentTimeMillis() > todayEnd) {
-			DateTime today = LocalDate.now().toDateTimeAtStartOfDay(
-					DateTimeZone.getDefault());
-			todayEnd = today.plusDays(1).getMillis() - 1;
-			tomorrowEnd = today.plusDays(2).getMillis() - 1;
-		}
+		updateYearEnd();
 	}
 	
 	/** Returns a m/d date. */
@@ -58,7 +61,7 @@ public class TimeUtils {
 	/** Returns 12-hour time with am/pm or 24-hour time, as appropriate. */
 	public static String formatTime(long millis) {
 		if (DateFormat.is24HourFormat(GradeientApp.getAppContext()))
-			return TIME_HOUR_MIN_24_HOUR.print(millis);
+			return TIME_HOUR_MIN_24.print(millis);
 		return TIME_HOUR_MIN_AM.print(millis).toLowerCase();
 	}
 	
@@ -72,19 +75,34 @@ public class TimeUtils {
 		return formatMonthDayNumeric(millis);
 	}
 	
-	/** Returns date in format Wednesday, Sept. 20 */
+	/** Returns "today" or a m/d date. */
+	public static String formatMonthDayToday(long millis) {
+		updateTodayEnd();
+		if (millis <= todayEnd)
+			return "today";
+		return formatMonthDayNumeric(millis);
+	}
+	
+	/** Returns date in format Wednesday, Sep 20 */
 	public static String formatWeekdayMonthDay(long millis) {
-		return WEEKDAY_MONTH_DAY.print(millis);
+		return WEEKDAY_MON_DAY.print(millis);
 	}
 	
-	/** Returns date in format Wed, Sept. 20 */
+	/** Returns date in format Wed, Sep 20 */
 	public static String formatWeekdayMonthDayShorter(long millis) {
-		return WEEKDAY_MONTH_DAY_SHORT.print(millis);
+		return WEEKD_MON_DAY.print(millis);
 	}
 	
-	/** Returns date in format Wed, Sept. 20, 2013 */
+	/** Returns date in format Wed, Sep 20, 2013 */
 	public static String formatWeekdayMonthDayYear(long millis) {
-		return WEEKDAY_MONTH_DAY_YEAR.print(millis);
+		return WEEKD_MON_DAY_YEAR.print(millis);
+	}
+	
+	public static String formatTimeDate(long millis) {
+		String time = formatTime(millis) + ", ";
+		if (millis < yearBegin || millis > yearEnd)
+			return time + DateTimeFormat.fullDate().print(millis);
+		return time + WEEKDAY_MONTH_DAY.print(millis);
 	}
 	
 	/** Set the date/time text on some TextViews (or Buttons) */
@@ -96,5 +114,22 @@ public class TimeUtils {
 		startTime.setText(TimeUtils.formatTime(startMillis));
 		endDate.setText(TimeUtils.formatWeekdayMonthDayYear(endMillis));
 		endTime.setText(TimeUtils.formatTime(endMillis));
+	}
+	
+	private static void updateTodayEnd() {
+		if (System.currentTimeMillis() > todayEnd) {
+			DateTime today = LocalDate.now().toDateTimeAtStartOfDay(
+					DateTimeZone.getDefault());
+			todayEnd = today.plusDays(1).getMillis() - 1;
+			tomorrowEnd = today.plusDays(2).getMillis() - 1;
+		}
+	}
+	
+	private static void updateYearEnd() {
+		if (System.currentTimeMillis() > yearEnd) {
+			DateTime year = DateTime.now().withDayOfYear(1).withMillisOfDay(0);
+			yearBegin = year.getMillis();
+			yearEnd = year.plusYears(1).getMillis() - 1;
+		}
 	}
 }

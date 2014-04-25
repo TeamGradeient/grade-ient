@@ -168,7 +168,6 @@ public class TaskProvider extends ContentProvider {
 //			case SEMESTER_ID:
 //				builder.setTables(Semester.Schema.TABLE);
 //				break;
-			// TASK_WORK_INTERVALS and TASK_WORK_INTERVAL_ID can't be queried
 			default:
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
 		}
@@ -176,9 +175,14 @@ public class TaskProvider extends ContentProvider {
 		SQLiteDatabase db = Database.getHelper().getReadableDatabase();
 		Cursor cursor = builder.query(db, projection, selection, selectionArgs,
 				null, null, sortOrder, null);
-		//TODO apparently if returning joins of tables, it might be better to
-		// use the general authority URI instead
-		cursor.setNotificationUri(getContext().getContentResolver(), uri);
+		if (uriMatch == WORK_INTERVALS_TASKS 
+				|| uriMatch == WORK_INTERVALS_TASKS_DATES)
+			// These queries are on a join, not a real table, so using the
+			// query URI for notifications doesn't work.
+			cursor.setNotificationUri(getContext().getContentResolver(), 
+					TaskWorkInterval.Schema.CONTENT_URI);
+		else
+			cursor.setNotificationUri(getContext().getContentResolver(), uri);
 		return cursor;
 	}
 
@@ -265,7 +269,8 @@ public class TaskProvider extends ContentProvider {
 		
 		// Figure out what table to delete from
 		String table = null;
-		switch (URI_MATCHER.match(uri)) {
+		int uriMatch = URI_MATCHER.match(uri);
+		switch (uriMatch) {
 			case TASK_ID:
 			case TASKS:
 				table = Task.Schema.TABLE; break;
@@ -284,8 +289,14 @@ public class TaskProvider extends ContentProvider {
 		
 		SQLiteDatabase db = Database.getHelper().getWritableDatabase();
 		int delCount = db.delete(table, whereClause, whereArgs);
-		if (delCount > 0)
+		if (delCount > 0) {
 			getContext().getContentResolver().notifyChange(uri, null);
+			// If a task is deleted, its work times will be deleted, so notify
+			// about a change to work times too.
+			if (uriMatch == TASK_ID || uriMatch == TASKS)
+				getContext().getContentResolver().notifyChange(
+						TaskWorkInterval.Schema.CONTENT_URI, null);
+		}
 		return delCount;
 	}
 

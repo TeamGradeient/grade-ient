@@ -20,14 +20,12 @@ import android.widget.FrameLayout;
 public class CalendarActivity extends Activity
 	implements LoaderManager.LoaderCallbacks<Cursor> {
 
-	private static final String TAG = "CalendarTaskActivity";
+	private static final String TAG = "CalendarActivity";
 	private static final int ADD_REQUEST = 1;
 	private static final int TASK_LOADER = 1;
 	private static final int WORK_LOADER = 2;
 	
 	private CalendarView calendarView;
-	private Cursor taskCursor;
-	private Cursor workCursor;
 	private Cursor loadedTaskCursor;
 	private Cursor loadedWorkCursor;
 	private long startMillis;
@@ -45,23 +43,6 @@ public class CalendarActivity extends Activity
 			endMillis = savedInstanceState.getLong(Extras.END_MILLIS);
 		}
 		calendarView = (CalendarView)findViewById(R.id.calendar_task_view);
-		
-//		LinearLayout ll = (LinearLayout) findViewById(R.id.task_layout);
-//		CalendarTaskView ctv = (CalendarTaskView) findViewById(R.id.calendar_task_view);
-//		
-//		//ll.setWeightSum(1);
-//		
-//		System.out.println(ctv);
-//		System.out.println(ll);
-//		View nv = new View(this);
-//		nv.setBackgroundColor(Color.BLACK);
-//		ll.setShowDividers(LinearLayout.SHOW_DIVIDER_MIDDLE);
-		//nv.setLayoutParams(ll.getLayoutParams());
-		//ll.addView(nv);
-		//View nv2 = new View(this);
-		//nv2.setBackgroundColor(Color.RED);
-		//ll.addView(nv2);
-		//ctv.populateLayoutWithTasks(ll);
 		
 		getLoaderManager().initLoader(TASK_LOADER, null, this);
 		getLoaderManager().initLoader(WORK_LOADER, null, this);
@@ -172,31 +153,19 @@ public class CalendarActivity extends Activity
 		if (loadedTaskCursor != null && loadedWorkCursor != null) {
 			System.out.println("# of tasks: " + loadedTaskCursor.getCount());
 			System.out.println("# of work times: " + loadedWorkCursor.getCount());
-			taskCursor = loadedTaskCursor;
-			workCursor = loadedWorkCursor;
-			loadedTaskCursor = null;
-			loadedWorkCursor = null;
 			// Update the calendar view
-			calendarView.updateTasks(taskCursor, workCursor, 
+			calendarView.updateTasks(loadedTaskCursor, loadedWorkCursor, 
 					startMillis, endMillis);
 			scrollToNow();
+			// We don't need to store the cursors
+			loadedTaskCursor = null;
+			loadedWorkCursor = null;
 		}
 	}
 	
 	@Override
 	public void onLoaderReset(Loader<Cursor> loader) {
-		int id = loader.getId();
-		switch (id) {
-		//TODO do anything to update the calendar view? (maybe not needed)
-			case TASK_LOADER:
-				taskCursor = null;
-				break;
-			case WORK_LOADER:
-				workCursor = null;
-				break;
-			default:
-				throw new IllegalArgumentException("Unknown id: " + id);
-		}
+		// nothing to see here...
 	}
 
 	private void scrollToNow() {
