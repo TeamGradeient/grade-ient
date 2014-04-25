@@ -46,6 +46,8 @@ public class CalendarActivity extends Activity
 		
 		getLoaderManager().initLoader(TASK_LOADER, null, this);
 		getLoaderManager().initLoader(WORK_LOADER, null, this);
+		
+		scrollToNow();
 	}
 
 	@Override
