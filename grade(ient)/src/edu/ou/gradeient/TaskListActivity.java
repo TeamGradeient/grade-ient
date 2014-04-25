@@ -19,6 +19,7 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 import edu.ou.gradeient.data.Task;
 
 // loader manager methods from 
@@ -150,6 +151,9 @@ public class TaskListActivity extends ListActivity
 				getContentResolver().delete(
 						ContentUris.withAppendedId(Task.Schema.CONTENT_URI, id),
 						null, null);
+				//TODO: This probably should go somewhere else?
+				Toast.makeText(getApplicationContext(),
+						"Task deleted", Toast.LENGTH_SHORT).show();
 			}
 		})
 		.setNegativeButton(android.R.string.no, null)
