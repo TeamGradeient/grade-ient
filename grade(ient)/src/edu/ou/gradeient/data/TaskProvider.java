@@ -1,4 +1,4 @@
-package edu.ou.gradeient;
+package edu.ou.gradeient.data;
 
 import java.util.List;
 
@@ -44,6 +44,9 @@ public class TaskProvider extends ContentProvider {
 	private static final int TASK_WORK_INTERVALS = 4;
 	private static final int TASK_WORK_INTERVAL_ID = 5;
 	private static final int TASK_WORK_INTERVALS_TASK_ID = 6;
+	private static final int TASK_WORK_INTERVALS_DATES = 7;
+	private static final int WORK_INTERVALS_TASKS = 8;
+	private static final int WORK_INTERVALS_TASKS_DATES = 9;
 //	private static final int SUBJECTS = 10;
 //	private static final int SUBJECT_ID = 11;
 //	private static final int SEMESTERS = 20;
@@ -55,9 +58,12 @@ public class TaskProvider extends ContentProvider {
 		URI_MATCHER.addURI(AUTHORITY, "tasks", TASKS);
 		URI_MATCHER.addURI(AUTHORITY, "tasks/#", TASK_ID);
 		URI_MATCHER.addURI(AUTHORITY, "tasks/#/#", TASK_DATES);
-		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals", TASK_WORK_INTERVALS);
-		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals/#", TASK_WORK_INTERVAL_ID);
-		URI_MATCHER.addURI(AUTHORITY, "task_work_intervals/task/#", TASK_WORK_INTERVALS_TASK_ID);
+		URI_MATCHER.addURI(AUTHORITY, "tasks/work_intervals", TASK_WORK_INTERVALS);
+		URI_MATCHER.addURI(AUTHORITY, "tasks/work_intervals/#", TASK_WORK_INTERVAL_ID);
+		URI_MATCHER.addURI(AUTHORITY, "tasks/work_intervals/task/#", TASK_WORK_INTERVALS_TASK_ID);
+		URI_MATCHER.addURI(AUTHORITY, "tasks/work_intervals/#/#", TASK_WORK_INTERVALS_DATES);
+		URI_MATCHER.addURI(AUTHORITY, "work_intervals_tasks", WORK_INTERVALS_TASKS);
+		URI_MATCHER.addURI(AUTHORITY, "work_intervals_tasks/#/#", WORK_INTERVALS_TASKS_DATES);
 //		URI_MATCHER.addURI(AUTHORITY, "subjects", SUBJECTS);
 //		URI_MATCHER.addURI(AUTHORITY, "subjects/#", SUBJECT_ID);
 //		URI_MATCHER.addURI(AUTHORITY, "semesters", SEMESTERS);
@@ -71,6 +77,18 @@ public class TaskProvider extends ContentProvider {
 					Task.Schema.END_INSTANT + ") "
 			+ "or (" + Task.Schema.START_INSTANT + " between ^1 and ^2)"
 			+ " or (" + Task.Schema.END_INSTANT + " between ^1 and ^2)";
+	private static final String WORK_INTERVALS_TASKS_WHERE = TASK_DATES_WHERE
+			.replaceAll(Task.Schema.START_INSTANT, 
+					TaskWorkInterval.Schema.TABLE + "." + 
+							TaskWorkInterval.Schema.START_INSTANT)
+							.replaceAll(Task.Schema.END_INSTANT,
+									TaskWorkInterval.Schema.TABLE + "." +
+											TaskWorkInterval.Schema.END_INSTANT);
+//	private static final String WORK_INTERVALS_TASKS_WHERE =
+//			TextUtils.expandTemplate("(^1 between ^2.^3 and ^2.^4) "
+//					+ "or (^2.^3 > ^1)", "^1", TaskWorkInterval.Schema.TABLE,
+//					TaskWorkInterval.Schema.START_INSTANT,
+//					TaskWorkInterval.Schema.END_INSTANT).toString();
 	
 	@Override
 	public boolean onCreate() {
@@ -89,25 +107,29 @@ public class TaskProvider extends ContentProvider {
 		int uriMatch = URI_MATCHER.match(uri);
 		
 		// Get the start and end date segments of the URI if applicable
-		if (uriMatch == TASK_DATES) {
+		if (uriMatch == TASK_DATES || uriMatch == TASK_WORK_INTERVALS_DATES
+				|| uriMatch == WORK_INTERVALS_TASKS_DATES) {
 			List<String> segments = uri.getPathSegments();
 			if (segments.size() < 2) // shouldn't happen, but check anyway
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
 			String start = segments.get(segments.size() - 2);
 			String end = segments.get(segments.size() - 1);
-			builder.appendWhereEscapeString(TextUtils.expandTemplate(
-					TASK_DATES_WHERE, start, end).toString());
+			if (uriMatch == TASK_DATES || uriMatch == TASK_WORK_INTERVALS_DATES)
+				builder.appendWhereEscapeString(TextUtils.expandTemplate(
+						TASK_DATES_WHERE, start, end).toString());
+			else
+				builder.appendWhereEscapeString(TextUtils.expandTemplate(
+						WORK_INTERVALS_TASKS_WHERE, start, end).toString());
 		}
-		
 		// In the case of most *_ID queries, limit to returning the one result 
 		// matching the requested ID.
-		if (uriMatch == TASK_ID) {
+		else if (uriMatch == TASK_ID) {
 //				|| uriMatch == SUBJECT_ID || uriMatch == SEMESTER_ID) {
 			builder.appendWhere(BaseColumns._ID + " = " + 
 					uri.getLastPathSegment());
 		}
 		
-		// Choose the correct table (and the sort order if relevant)
+		// Choose the correct table (and the sort order and columns if relevant)
 		switch (uriMatch) {
 			case TASKS:
 			case TASK_DATES:
@@ -117,10 +139,20 @@ public class TaskProvider extends ContentProvider {
 			case TASK_ID:
 				builder.setTables(Task.Schema.TABLE);
 				break;
+			case TASK_WORK_INTERVALS:
+			case TASK_WORK_INTERVALS_DATES:
 			case TASK_WORK_INTERVALS_TASK_ID:
 				if (TextUtils.isEmpty(sortOrder))
 					sortOrder = TaskWorkInterval.Schema.SORT_ORDER_DEFAULT;
 				builder.setTables(TaskWorkInterval.Schema.TABLE);
+				break;
+			case WORK_INTERVALS_TASKS:
+			case WORK_INTERVALS_TASKS_DATES:
+				if (TextUtils.isEmpty(sortOrder))
+					sortOrder = TaskWorkInterval.Schema.SORT_ORDER_DEFAULT_HYBRID;
+				builder.setTables(TaskWorkInterval.Schema.TABLE_HYBRID);
+				if (projection == null)
+					projection = TaskWorkInterval.Schema.COLUMNS_HYBRID;
 				break;
 //			case SUBJECTS:
 //				if (TextUtils.isEmpty(sortOrder))
@@ -136,36 +168,51 @@ public class TaskProvider extends ContentProvider {
 //			case SEMESTER_ID:
 //				builder.setTables(Semester.Schema.TABLE);
 //				break;
-			// TASK_WORK_INTERVALS and TASK_WORK_INTERVAL_ID can't be queried
 			default:
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
 		}
 		
 		SQLiteDatabase db = Database.getHelper().getReadableDatabase();
 		Cursor cursor = builder.query(db, projection, selection, selectionArgs,
-				null, null, sortOrder);
-		//TODO apparently if returning joins of tables, it might be better to
-		// use the general authority URI instead
-		cursor.setNotificationUri(getContext().getContentResolver(), uri);
+				null, null, sortOrder, null);
+		if (uriMatch == WORK_INTERVALS_TASKS 
+				|| uriMatch == WORK_INTERVALS_TASKS_DATES)
+			// These queries are on a join, not a real table, so using the
+			// query URI for notifications doesn't work.
+			cursor.setNotificationUri(getContext().getContentResolver(), 
+					TaskWorkInterval.Schema.CONTENT_URI);
+		else
+			cursor.setNotificationUri(getContext().getContentResolver(), uri);
 		return cursor;
 	}
 
 	@Override
 	public String getType(Uri uri) {
 		switch (URI_MATCHER.match(uri)) {
-			case TASKS:			return Task.Schema.CONTENT_TYPE;
-			case TASK_ID:		return Task.Schema.CONTENT_ITEM_TYPE;
+			case TASKS:
+			case TASK_DATES:
+				return Task.Schema.CONTENT_TYPE;
+			case TASK_ID:
+				return Task.Schema.CONTENT_ITEM_TYPE;
 			case TASK_WORK_INTERVALS: 
+			case TASK_WORK_INTERVALS_TASK_ID: 
+			case TASK_WORK_INTERVALS_DATES:
 				return TaskWorkInterval.Schema.CONTENT_TYPE;
 			case TASK_WORK_INTERVAL_ID: 
 				return TaskWorkInterval.Schema.CONTENT_ITEM_TYPE;
-			case TASK_WORK_INTERVALS_TASK_ID: 
+			case WORK_INTERVALS_TASKS:
+			case WORK_INTERVALS_TASKS_DATES:
 				return TaskWorkInterval.Schema.CONTENT_TYPE;
 //			case SUBJECTS:		return Subject.Schema.CONTENT_TYPE;
 //			case SUBJECT_ID:	return Subject.Schema.CONTENT_ITEM_TYPE;
 //			case SEMESTERS:		return Semester.Schema.CONTENT_TYPE;
 //			case SEMESTER_ID:	return Semester.Schema.CONTENT_ITEM_TYPE;
+			case -1:
+				throw new IllegalArgumentException("Unsupported URI: " + uri);
 			default:
+				Log.wtf(TAG, "Known URI did not match content type: match "
+						+ "value was " + URI_MATCHER.match(uri) + ", URI was"
+						+ uri.toString());
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
 		}
 	}
@@ -191,7 +238,6 @@ public class TaskProvider extends ContentProvider {
 			return null;
 		}
 		Uri itemUri = ContentUris.withAppendedId(uri, id);
-		//TODO tutorial had check using nonexistant method isInBatchMode()
 		// Notify all listeners of changes
 		getContext().getContentResolver().notifyChange(itemUri, null);
 		return itemUri;
@@ -223,7 +269,8 @@ public class TaskProvider extends ContentProvider {
 		
 		// Figure out what table to delete from
 		String table = null;
-		switch (URI_MATCHER.match(uri)) {
+		int uriMatch = URI_MATCHER.match(uri);
+		switch (uriMatch) {
 			case TASK_ID:
 			case TASKS:
 				table = Task.Schema.TABLE; break;
@@ -236,15 +283,20 @@ public class TaskProvider extends ContentProvider {
 //				table = Subject.Schema.TABLE; break;
 //			case SEMESTERS:
 //				table = Semester.Schema.TABLE; break;
-			//TODO should there be anything that's unsupported for updating?
 			default:
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
 		}
 		
 		SQLiteDatabase db = Database.getHelper().getWritableDatabase();
 		int delCount = db.delete(table, whereClause, whereArgs);
-		if (delCount > 0)
+		if (delCount > 0) {
 			getContext().getContentResolver().notifyChange(uri, null);
+			// If a task is deleted, its work times will be deleted, so notify
+			// about a change to work times too.
+			if (uriMatch == TASK_ID || uriMatch == TASKS)
+				getContext().getContentResolver().notifyChange(
+						TaskWorkInterval.Schema.CONTENT_URI, null);
+		}
 		return delCount;
 	}
 
@@ -290,7 +342,6 @@ public class TaskProvider extends ContentProvider {
 //			case SEMESTERS:
 //				table = Semester.Schema.TABLE;
 //				break;
-			//TODO should there be anything that's unsupported for updating?
 			default:
 				throw new IllegalArgumentException("Unsupported URI: " + uri);
 		}
