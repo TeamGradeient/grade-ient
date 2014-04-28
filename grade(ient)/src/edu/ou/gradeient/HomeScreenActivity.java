@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import org.joda.time.DateTime;
 
+import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.LoaderManager;
@@ -28,6 +29,7 @@ import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.SimpleCursorAdapter.ViewBinder;
 import android.widget.TextView;
+import edu.ou.gradeient.data.Subject;
 import edu.ou.gradeient.data.Task;
 import edu.ou.gradeient.data.TaskWorkInterval;
 
@@ -75,6 +77,7 @@ public class HomeScreenActivity extends Activity
 	private ListView upcomingWork;
 	
 	@Override
+	@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_home_screen);
@@ -134,6 +137,9 @@ public class HomeScreenActivity extends Activity
 						((TextView)view).setText(TimeUtils.formatTime(start)
 								+ '-' + TimeUtils.formatTime(end));
 						return true;
+					case R.id.list_subject:
+						((TextView)view).setText(Subject.abbreviateName(value));
+						return true;
 				}
 				// If the view ID was not one of the ones above, this view binder
 				// didn't handle binding the content (probably because it's
@@ -166,6 +172,9 @@ public class HomeScreenActivity extends Activity
 					case R.id.list_time:
 						((TextView)view).setText(TimeUtils.formatTime(
 								Long.parseLong(value)));
+						return true;
+					case R.id.list_subject:
+						((TextView)view).setText(Subject.abbreviateName(value));
 						return true;
 					case R.id.list_layout:
 						boolean isDone = false;
@@ -358,7 +367,7 @@ public class HomeScreenActivity extends Activity
 		Layout layout = weekdayMonthDate.getLayout();
 		if (layout != null && layout.getEllipsisCount(0) != 0) {
 			// use a shorter format if date was ellipsized
-			weekdayMonthDate.setText(TimeUtils.formatWeekdayMonthDayShorter(
+			weekdayMonthDate.setText(TimeUtils.formatWeekdayMonDay(
 					System.currentTimeMillis()));
 		}
 		

@@ -83,21 +83,28 @@ public class TimeUtils {
 		return formatMonthDayNumeric(millis);
 	}
 	
-	/** Returns date in format Wednesday, Sep 20 */
+	/** Returns date in format Friday, April 25 */
 	public static String formatWeekdayMonthDay(long millis) {
+		return WEEKDAY_MONTH_DAY.print(millis);
+	}
+	
+	/** Returns date in format Friday, Apr 25 */
+	public static String formatWeekdayMonDay(long millis) {
 		return WEEKDAY_MON_DAY.print(millis);
 	}
 	
-	/** Returns date in format Wed, Sep 20 */
-	public static String formatWeekdayMonthDayShorter(long millis) {
+	/** Returns date in format Fri, Apr 25 */
+	public static String formatWeekdMonDay(long millis) {
 		return WEEKD_MON_DAY.print(millis);
 	}
 	
-	/** Returns date in format Wed, Sep 20, 2013 */
-	public static String formatWeekdayMonthDayYear(long millis) {
+	/** Returns date in format Fri, Apr 25, 2014 */
+	public static String formatWeekdMonDayYear(long millis) {
 		return WEEKD_MON_DAY_YEAR.print(millis);
 	}
 	
+	/** Returns date in format Friday, April 25 if date is in current year,
+	 * or Friday, April 25, 2014 if date is not in current year. */
 	public static String formatTimeDate(long millis) {
 		String time = formatTime(millis) + ", ";
 		if (millis < yearBegin || millis > yearEnd)
@@ -110,9 +117,9 @@ public class TimeUtils {
 			TextView startDate, TextView endTime, TextView endDate) {
 		long startMillis = interval.getStartMillis();
 		long endMillis = interval.getEndMillis();
-		startDate.setText(TimeUtils.formatWeekdayMonthDayYear(startMillis));
+		startDate.setText(TimeUtils.formatWeekdMonDayYear(startMillis));
 		startTime.setText(TimeUtils.formatTime(startMillis));
-		endDate.setText(TimeUtils.formatWeekdayMonthDayYear(endMillis));
+		endDate.setText(TimeUtils.formatWeekdMonDayYear(endMillis));
 		endTime.setText(TimeUtils.formatTime(endMillis));
 	}
 	

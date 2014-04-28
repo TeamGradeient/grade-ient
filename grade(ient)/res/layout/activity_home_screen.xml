@@ -60,7 +60,7 @@
             <RelativeLayout
                 android:id="@+id/home_next_task"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:layout_marginRight="@dimen/home_padding"
                 android:layout_weight="1.7"
                 android:background="@color/holo_orange_light"
@@ -96,6 +96,7 @@
                     android:layout_below="@id/home_next_now"
                     android:paddingLeft="8dp"
                     android:maxLines="2"
+                    android:lines="2"
                     android:text="@string/home_next_task" />
                 
                 <TextView
@@ -115,7 +116,7 @@
             <LinearLayout
                 android:id="@+id/home_goto_calendar_button"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
+                android:layout_height="match_parent"
                 android:orientation="vertical"
                 android:layout_weight="1"
                 android:background="@color/holo_green_dark"
