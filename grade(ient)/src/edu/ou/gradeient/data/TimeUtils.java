@@ -45,6 +45,7 @@ public class TimeUtils {
 			new DateTimeFormatterBuilder().appendPattern("EEE, ")
 			.append(DateTimeFormat.mediumDate()).toFormatter();
 	//TODO will break with time zones
+	private static long todayBegin = 0;
 	private static long todayEnd = 0;
 	private static long tomorrowEnd = 0;
 	private static long yearBegin = 0;
@@ -69,17 +70,19 @@ public class TimeUtils {
 	/** Returns "today", "tomorrow", or a m/d date. */
 	public static String formatMonthDayTodayTomorrow(long millis) {
 		updateTodayEnd();
-		if (millis <= todayEnd)
-			return "today";
-		if (millis <= tomorrowEnd)
-			return "tomorrow";
+		if (millis >= todayBegin) {
+			if (millis <= todayEnd)
+				return "today";
+			if (millis <= tomorrowEnd)
+				return "tomorrow";
+		}
 		return formatMonthDayNumeric(millis);
 	}
 	
 	/** Returns "today" or a m/d date. */
 	public static String formatMonthDayToday(long millis) {
 		updateTodayEnd();
-		if (millis <= todayEnd)
+		if (millis >= todayBegin && millis <= todayEnd)
 			return "today";
 		return formatMonthDayNumeric(millis);
 	}
@@ -128,6 +131,7 @@ public class TimeUtils {
 		if (System.currentTimeMillis() > todayEnd) {
 			DateTime today = LocalDate.now().toDateTimeAtStartOfDay(
 					DateTimeZone.getDefault());
+			todayBegin = today.getMillis();
 			todayEnd = today.plusDays(1).getMillis() - 1;
 			tomorrowEnd = today.plusDays(2).getMillis() - 1;
 		}
