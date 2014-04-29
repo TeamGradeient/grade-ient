@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.app.LoaderManager;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.CursorLoader;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -17,6 +18,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.SimpleCursorAdapter.ViewBinder;
@@ -59,7 +62,7 @@ public class TaskListActivity extends ListActivity
 				Task.Schema.END_INSTANT, Task.Schema.IS_DONE, 
 				Task.Schema.SUBJECT_NAME };
 		int[] viewIDs = { R.id.task_name, R.id.subject_abbrev,
-				R.id.task_due, R.id.is_done, R.id.task_color };
+				R.id.task_due, R.id.done_cb, R.id.task_color };
 		
 		// Initialize the adapter. Note that we pass a 'null' Cursor as the
 		// third argument. We will pass the adapter a Cursor only when the
@@ -88,10 +91,22 @@ public class TaskListActivity extends ListActivity
 								Long.parseLong(cursor.getString(columnIndex)));
 						((TextView)view).setText(text);
 						return true;
-					case R.id.is_done:
+					case R.id.done_cb:
 						boolean isDone = "1".equals(cursor.getString(columnIndex));
-						((CheckBox)view).setChecked(isDone);
-						//TODO add listener?
+						final long taskId = cursor.getLong(0);
+						CheckBox cb = (CheckBox)view;
+						cb.setChecked(isDone);
+						cb.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+							@Override
+							public void onCheckedChanged(
+									CompoundButton buttonView, boolean isChecked) {
+								ContentValues cv = new ContentValues(1);
+								cv.put(Task.Schema.IS_DONE, isChecked ? 1 : 0);
+								getContentResolver().update(
+										Task.Schema.getUriForTask(taskId), 
+										cv, null, null);
+							}
+						});
 						return true;
 					case R.id.task_color:
 						int colorRes = Subject.getColor(cursor.getString(columnIndex));
