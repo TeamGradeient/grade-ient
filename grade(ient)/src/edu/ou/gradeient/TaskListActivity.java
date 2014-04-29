@@ -82,14 +82,16 @@ public class TaskListActivity extends ListActivity
 						// Make the subject into an abbreviation
 						String subject = cursor.getString(columnIndex);
 						String abbrev = Subject.abbreviateName(subject);
-						if (abbrev == null)
+						if (abbrev == null) {
 							view.setVisibility(View.GONE);
-						else
+						} else {
+							view.setVisibility(View.VISIBLE);
 							((TextView)view).setText(abbrev);
+						}
 						return true;
 					case R.id.task_due:
-						String text = TimeUtils.formatTimeDate(
-								Long.parseLong(cursor.getString(columnIndex)));
+						long due = Long.parseLong(cursor.getString(columnIndex));
+						String text = TimeUtils.formatTimeDate(due);
 						((TextView)view).setText(text);
 						return true;
 					case R.id.done_cb:
@@ -101,6 +103,8 @@ public class TaskListActivity extends ListActivity
 							@Override
 							public void onCheckedChanged(
 									CompoundButton buttonView, boolean isChecked) {
+								// Update the task in the database when the
+								// checkbox state is changed
 								ContentValues cv = new ContentValues(1);
 								cv.put(Task.Schema.IS_DONE, isChecked ? 1 : 0);
 								getContentResolver().update(
