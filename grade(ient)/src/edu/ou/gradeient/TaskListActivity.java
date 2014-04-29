@@ -27,6 +27,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import edu.ou.gradeient.data.Subject;
 import edu.ou.gradeient.data.Task;
+import edu.ou.gradeient.data.TimeUtils;
 
 // loader manager methods from 
 // http://www.androiddesignpatterns.com/2012/07/understanding-loadermanager.html

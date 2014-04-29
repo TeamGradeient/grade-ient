@@ -1,4 +1,4 @@
-package edu.ou.gradeient;
+package edu.ou.gradeient.data;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -8,6 +8,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
 
+import edu.ou.gradeient.GradeientApp;
 import android.text.format.DateFormat;
 import android.widget.TextView;
 

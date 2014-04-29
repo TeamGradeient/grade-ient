@@ -27,6 +27,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import edu.ou.gradeient.data.Task;
 import edu.ou.gradeient.data.TaskWorkInterval;
+import edu.ou.gradeient.data.TimeUtils;
 
 public class CalendarView extends View {
 	private static final String TAG = "CalendarTaskView";

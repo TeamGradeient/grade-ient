@@ -32,6 +32,7 @@ import android.widget.TextView;
 import edu.ou.gradeient.data.Subject;
 import edu.ou.gradeient.data.Task;
 import edu.ou.gradeient.data.TaskWorkInterval;
+import edu.ou.gradeient.data.TimeUtils;
 
 public class HomeScreenActivity extends Activity 
 		implements LoaderManager.LoaderCallbacks<Cursor>{
