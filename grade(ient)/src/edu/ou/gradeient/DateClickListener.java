@@ -11,6 +11,7 @@ import com.android.datetimepicker.date.DatePickerDialog;
 import com.android.datetimepicker.date.DatePickerDialog.OnDateSetListener;
 
 import edu.ou.gradeient.data.DateTimeInterval;
+import edu.ou.gradeient.data.TimeUtils;
 
 /** This class is used to update the date buttons. 
  * (sort of from Android Calendar's com.android.calendar.event.EditEventView) */

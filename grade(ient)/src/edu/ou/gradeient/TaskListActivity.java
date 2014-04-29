@@ -4,6 +4,7 @@ import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.app.LoaderManager;
 import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.CursorLoader;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -16,11 +17,17 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.SimpleCursorAdapter.ViewBinder;
 import android.widget.TextView;
 import android.widget.Toast;
+import edu.ou.gradeient.data.Subject;
 import edu.ou.gradeient.data.Task;
+import edu.ou.gradeient.data.TimeUtils;
 
 // loader manager methods from 
 // http://www.androiddesignpatterns.com/2012/07/understanding-loadermanager.html
@@ -37,8 +44,9 @@ public class TaskListActivity extends ListActivity
 	private static final int ADD_REQUEST = 1;
 	private static final int EDIT_REQUEST = 2;
 	
-	private static final String[] COLUMNS = { Task.Schema._ID, 
-		Task.Schema.NAME, Task.Schema.END_INSTANT };
+	private static final String[] COLUMNS = { Task.Schema._ID,
+		Task.Schema.NAME, Task.Schema.SUBJECT_NAME, Task.Schema.END_INSTANT,
+		Task.Schema.IS_DONE };
 	
 	private static final int LOADER_ID = 1;
 	/** Adapter that binds the data to the ListView */
@@ -51,29 +59,68 @@ public class TaskListActivity extends ListActivity
 		getActionBar().setDisplayHomeAsUpEnabled(true);
 		
 		// Mappings of columns to views
-		String[] dataColumns = { Task.Schema.NAME, Task.Schema.END_INSTANT };
-		int[] viewIDs = { android.R.id.text1, android.R.id.text2 };
-
+		String[] dataColumns = { Task.Schema.NAME, Task.Schema.SUBJECT_NAME,
+				Task.Schema.END_INSTANT, Task.Schema.IS_DONE, 
+				Task.Schema.SUBJECT_NAME };
+		int[] viewIDs = { R.id.task_name, R.id.subject_abbrev,
+				R.id.task_due, R.id.done_cb, R.id.task_color };
+		
 		// Initialize the adapter. Note that we pass a 'null' Cursor as the
 		// third argument. We will pass the adapter a Cursor only when the
 		// data has finished loading for the first time (i.e. when the
-		// LoaderManager delivers the data to onLoadFinished). Also note
-		// that we have passed the '0' flag as the last argument. This
+		// LoaderManager delivers the data to onLoadFinished). The '0' flag
 		// prevents the adapter from registering a ContentObserver for the
 		// Cursor (the CursorLoader will do this for us!).
-		adapter = new SimpleCursorAdapter(this, 
-				android.R.layout.simple_list_item_2, null, dataColumns, 
-				viewIDs, 0) {
+		adapter = new SimpleCursorAdapter(this, R.layout.task_list_item_view,
+				null, dataColumns, viewIDs, 0);
+		adapter.setViewBinder(new ViewBinder() {
 			@Override
-			public void setViewText(TextView v, String text) {
-				if (v.getId() == android.R.id.text2) {
-					// text2 is the line for the date, so format the date properly
-					// instead of displaying a number in milliseconds.
-					text = TimeUtils.formatTimeDate(Long.parseLong(text));
+			public boolean setViewValue(View view, Cursor cursor,
+					int columnIndex) {
+				switch (view.getId()) {
+					case R.id.subject_abbrev:
+						// Make the subject into an abbreviation
+						String subject = cursor.getString(columnIndex);
+						String abbrev = Subject.abbreviateName(subject);
+						if (abbrev == null) {
+							view.setVisibility(View.GONE);
+						} else {
+							view.setVisibility(View.VISIBLE);
+							((TextView)view).setText(abbrev);
+						}
+						return true;
+					case R.id.task_due:
+						long due = Long.parseLong(cursor.getString(columnIndex));
+						String text = TimeUtils.formatTimeDate(due);
+						((TextView)view).setText(text);
+						return true;
+					case R.id.done_cb:
+						boolean isDone = "1".equals(cursor.getString(columnIndex));
+						final long taskId = cursor.getLong(0);
+						CheckBox cb = (CheckBox)view;
+						cb.setChecked(isDone);
+						cb.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+							@Override
+							public void onCheckedChanged(
+									CompoundButton buttonView, boolean isChecked) {
+								// Update the task in the database when the
+								// checkbox state is changed
+								ContentValues cv = new ContentValues(1);
+								cv.put(Task.Schema.IS_DONE, isChecked ? 1 : 0);
+								getContentResolver().update(
+										Task.Schema.getUriForTask(taskId), 
+										cv, null, null);
+							}
+						});
+						return true;
+					case R.id.task_color:
+						int colorRes = Subject.getColor(cursor.getString(columnIndex));
+						view.setBackgroundResource(colorRes);
+						return true;
 				}
-				v.setText(text);
+				return false;
 			}
-		};
+		});
 
 		// Associate the (now empty) adapter with the ListView.
 		setListAdapter(adapter);

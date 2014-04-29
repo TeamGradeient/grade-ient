@@ -13,6 +13,7 @@ import com.android.datetimepicker.time.TimePickerDialog;
 import com.android.datetimepicker.time.TimePickerDialog.OnTimeSetListener;
 
 import edu.ou.gradeient.data.DateTimeInterval;
+import edu.ou.gradeient.data.TimeUtils;
 
 /** This class is used to update the time buttons. 
  * (sort of from Android Calendar's com.android.calendar.event.EditEventView) */
