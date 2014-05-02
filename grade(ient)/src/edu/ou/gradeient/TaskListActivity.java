@@ -43,7 +43,7 @@ public class TaskListActivity extends ListActivity
 	private static final String TAG = "TaskListActivity";
 	
 	private static final int ADD_REQUEST = 1;
-	private static final int EDIT_REQUEST = 2;
+	private static final int VIEW_REQUEST = 2;
 	
 	private static final String[] COLUMNS = { Task.Schema._ID,
 		Task.Schema.NAME, Task.Schema.SUBJECT_NAME, Task.Schema.END_INSTANT,
@@ -144,7 +144,7 @@ public class TaskListActivity extends ListActivity
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.task_view, menu);
+		getMenuInflater().inflate(R.menu.task_list, menu);
 		return true;
 	}
 
@@ -170,13 +170,9 @@ public class TaskListActivity extends ListActivity
 	
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
-		Intent intent = new Intent(this, EditTaskActivity.class);
-		// Indicate that this is an existing task to edit
-		intent.putExtra(Extras.TASK_STATUS,
-				Extras.TaskStatus.EDIT_TASK);
-		// Indicate that it is the task with the given ID that should be edited
+		Intent intent = new Intent(this, ViewTaskActivity.class);
 		intent.putExtra(Extras.TASK_ID, id);
-		startActivityForResult(intent, EDIT_REQUEST);
+		startActivityForResult(intent, VIEW_REQUEST);
 	}
 	
 	@Override
@@ -218,8 +214,9 @@ public class TaskListActivity extends ListActivity
 		switch (requestCode) {
 			case ADD_REQUEST:
 				// intentionally falling through
-			case EDIT_REQUEST:
+			case VIEW_REQUEST:
 				// Make sure the view updates
+				//TODO do we actually need to do this when view request returns?
 				if (resultCode == RESULT_OK)
 					adapter.notifyDataSetChanged();
 				break;

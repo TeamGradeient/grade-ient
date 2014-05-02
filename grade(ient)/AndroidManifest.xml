@@ -49,7 +49,7 @@
                 android:value="edu.ou.gradeient.HomeScreenActivity" />
         </activity>
         <activity
-            android:name="edu.ou.gradeient.TaskSummaryView"
+            android:name="edu.ou.gradeient.ViewTaskActivity"
             android:label="@string/title_activity_task_summary_view"
             android:parentActivityName="edu.ou.gradeient.MainActivity" >
             <meta-data

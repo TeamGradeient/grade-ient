@@ -16,7 +16,7 @@ import android.widget.Toast;
 import edu.ou.gradeient.data.Task;
 import edu.ou.gradeient.data.TaskWorkInterval;
 
-public class TaskSummaryView extends Activity {
+public class ViewTaskActivity extends Activity {
 
 	private static final String TAG = "TaskSummaryView";
 	private static final int EDIT_REQUEST = 1;
@@ -26,7 +26,7 @@ public class TaskSummaryView extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_task_summary_view);
+		setContentView(R.layout.activity_view_task);
 		// Show the Up button in the action bar.
 		getActionBar().setDisplayHomeAsUpEnabled(true);
 		
@@ -97,7 +97,7 @@ public class TaskSummaryView extends Activity {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.task_summary_view, menu);
+		getMenuInflater().inflate(R.menu.view_task, menu);
 	
 		return true;
 	}
@@ -142,8 +142,7 @@ public class TaskSummaryView extends Activity {
 			case R.id.action_edit:
 				Intent intent = new Intent(this, EditTaskActivity.class);
 				// Indicate that this is an existing task to edit
-				intent.putExtra(Extras.TASK_STATUS,
-						Extras.TaskStatus.EDIT_TASK);
+				intent.putExtra(Extras.TASK_STATUS, Extras.TaskStatus.EDIT_TASK);
 				// Indicate that it is the task with the given ID that should be edited
 				intent.putExtra(Extras.TASK_ID, task.getId());
 				startActivityForResult(intent, EDIT_REQUEST);

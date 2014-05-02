@@ -127,6 +127,10 @@ public class TaskProvider extends ContentProvider {
 //				|| uriMatch == SUBJECT_ID || uriMatch == SEMESTER_ID) {
 			builder.appendWhere(BaseColumns._ID + " = " + 
 					uri.getLastPathSegment());
+		} else if (uriMatch == TASK_WORK_INTERVALS_TASK_ID) {
+			// Match the requested task ID
+			builder.appendWhere(TaskWorkInterval.Schema.TASK_ID + " = " + 
+					uri.getLastPathSegment());
 		}
 		
 		// Choose the correct table (and the sort order and columns if relevant)
