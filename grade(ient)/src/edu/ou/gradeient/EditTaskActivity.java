@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.TextView;
@@ -30,6 +31,7 @@ public class EditTaskActivity extends Activity {
 	private TextView subjectText;
 	private TextView notesText;
 	private CheckBox doneCheckBox;
+	private CheckBox randomWorkCb;
 
 	private Task task;
 	private int taskStatus;
@@ -45,6 +47,7 @@ public class EditTaskActivity extends Activity {
 		subjectText = (TextView)findViewById(R.id.subject_name);
 		notesText = (TextView)findViewById(R.id.notes);
 		doneCheckBox = (CheckBox)findViewById(R.id.is_done);
+		randomWorkCb = (CheckBox)findViewById(R.id.random_cb);
 		Button startDateButton = (Button)findViewById(R.id.start_date);
 		Button endDateButton = (Button)findViewById(R.id.end_date);
 		Button startTimeButton = (Button)findViewById(R.id.start_time);
@@ -72,6 +75,10 @@ public class EditTaskActivity extends Activity {
 		subjectText.setTextKeepState(task.getSubject());
 		notesText.setTextKeepState(task.getNotes());
 		doneCheckBox.setChecked(task.isDone());
+		
+		// If this isn't a new task, hide the option to create random work times
+		if (taskStatus != Extras.TaskStatus.NEW_TASK)
+			randomWorkCb.setVisibility(View.GONE);
 	}
 
 	// We don't need to worry about onPause, onStop, or onDestroy because
@@ -192,6 +199,8 @@ public class EditTaskActivity extends Activity {
 								task.toContentValues());
 						//TODO TEMPORARY: add some random work intervals to the
 						// task and put them in the database.
+						if (!randomWorkCb.isChecked())
+							break;
 						long id = ContentUris.parseId(taskUri);
 						Log.i(TAG, "Old id: " + task.getId() + "; new ID: " + id);
 						task.setId(id);

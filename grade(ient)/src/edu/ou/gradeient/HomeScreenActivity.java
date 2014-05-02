@@ -474,7 +474,7 @@ public class HomeScreenActivity extends Activity
 					break;
 				case DRAWER_ITEM_FEEDBACK:
 					Intent emailIntent = new Intent(Intent.ACTION_SENDTO, 
-							Uri.fromParts("mailto","grade.ient@gmail.com", null));
+							Uri.fromParts("mailto","grade.ient+trello@gmail.com", null));
 					emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Feedback");
 					startActivity(Intent.createChooser(emailIntent, "Email Feedback"));
 					break;

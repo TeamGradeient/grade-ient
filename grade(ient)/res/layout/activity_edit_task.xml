@@ -104,6 +104,12 @@
                 android:inputType="textAutoCorrect|textCapSentences|textMultiLine"
                 android:minHeight="48dip" />
         </LinearLayout>
+        
+        <CheckBox
+            android:id="@+id/random_cb"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/random_work" />
     </LinearLayout>
 
 </ScrollView>
