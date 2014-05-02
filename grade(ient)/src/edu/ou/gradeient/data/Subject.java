@@ -38,9 +38,9 @@ public class Subject {
 			Pattern.compile("(.)\\S*\\s+(.)\\S*\\s*(.?).*\\s*(.?).*");
 	private static final String SUBJ_REPLACE = "[$1$2$3$4]";
 	
-	private static final int[] COLORS = { R.color.holo_blue_dark, 
-		R.color.holo_green_dark, R.color.holo_orange_dark, R.color.holo_purple,
-		R.color.holo_red_dark };
+	public static final int[] COLOR_RESOURCES = { R.color.dark_gray,
+		R.color.holo_blue_dark, R.color.holo_green_dark, 
+		R.color.holo_orange_dark, R.color.holo_purple, R.color.holo_red_dark };
 	
 	/**A string containing the name of the subject*/
 	private String name;
@@ -66,9 +66,18 @@ public class Subject {
 	 * If the name is null or empty, returns gray.
 	 */
 	public static int getColor(String subjectName) {
-		if (TextUtils.isEmpty(subjectName)) return R.color.dark_gray;
+		return COLOR_RESOURCES[getColorIndex(subjectName)];
+	}
+	
+	/**
+	 * Get the index in COLOR_RESOURCES of a color for the subject based on 
+	 * the name's hash code. If the name is null or empty, returns gray index.
+	 */
+	public static int getColorIndex(String subjectName) {
+		if (TextUtils.isEmpty(subjectName)) 
+			return 0;
 		int hashCode = subjectName.hashCode();
 		if (hashCode < 0) hashCode = -hashCode;
-		return COLORS[hashCode % COLORS.length];
+		return 1 + hashCode % (COLOR_RESOURCES.length - 1);
 	}
 }

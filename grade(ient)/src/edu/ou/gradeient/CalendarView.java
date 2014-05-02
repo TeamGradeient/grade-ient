@@ -14,8 +14,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Typeface;
-import android.text.format.DateFormat;
-import android.text.format.DateUtils;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -25,6 +23,7 @@ import android.widget.AbsoluteLayout;
 import android.widget.AbsoluteLayout.LayoutParams;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import edu.ou.gradeient.data.Subject;
 import edu.ou.gradeient.data.Task;
 import edu.ou.gradeient.data.TaskWorkInterval;
 import edu.ou.gradeient.data.TimeUtils;
@@ -45,6 +44,7 @@ public class CalendarView extends View {
 	private Paint currentTimeBarPaint;
 	private Paint taskBackgroundPaint;
 	private Paint taskNamePaint;
+	private int[] colors;
 	
 	private DisplayMetrics displaymetrics = getResources().getDisplayMetrics();
 	
@@ -306,8 +306,16 @@ public class CalendarView extends View {
 		currentTimeBarPaint.setARGB(255, 200, 0, 0);
 		currentTimeBarPaint.setStyle(Paint.Style.FILL);
 		
+		colors = new int[Subject.COLOR_RESOURCES.length];
+		for (int i = 0; i < colors.length; ++i) {
+			int color = getResources().getColor(Subject.COLOR_RESOURCES[i]);
+			// clear the alpha bits of the color
+			color &= 16777215; // 2^24 - 1
+			// | (85 << 24) means set the alpha to 85 out of 255
+			colors[i] = color | (85 << 24);
+		}
+		
 		taskBackgroundPaint = new Paint();
-		taskBackgroundPaint.setARGB(85, 100, 0, 100);
 		taskBackgroundPaint.setStyle(Paint.Style.FILL);
 		
 		//same settings as day name paint, but set up as a separate
@@ -335,12 +343,6 @@ public class CalendarView extends View {
 		super.onDraw(canvas);
 		drawBackground(canvas);
 		drawTasks(canvas);
-//		drawTask(canvas, 4, 0, startTime + DAY_MILLIS*3/2, startTime + DAY_MILLIS*3, "Calculus");
-		//Draw a task again in the same place to indicate a work time. 
-		//drawTaskBackground(canvas, 4, 0, startTime + 2.2*DAY_MILLIS, startTime + 2.5*DAY_MILLIS);
-//		drawTask(canvas, 4, 2, startTime + DAY_MILLIS*2, startTime + DAY_MILLIS*7/2, "SS work");
-//		drawTask(canvas, 4, 3, startTime + DAY_MILLIS*5/2, startTime + DAY_MILLIS*7/2, "Comp. Org");
-//		drawTask(canvas, 4, 1, startTime + DAY_MILLIS/2, startTime + DAY_MILLIS*2, "Data Structures.");
 		drawTimeBar(canvas);
 	}
 	
@@ -361,6 +363,8 @@ public class CalendarView extends View {
 		int numColumns = columns.size();
 		for (int col = 0; col < numColumns; ++col) {
 			for (Task t : columns.get(col)) {
+				int color = colors[Subject.getColorIndex(t.getSubject())];
+				taskBackgroundPaint.setColor(color);
 				// Draw the task
 				drawTask(canvas, numColumns, col, t.getStartMillis(), 
 						t.getEndMillis(), t.getName());
