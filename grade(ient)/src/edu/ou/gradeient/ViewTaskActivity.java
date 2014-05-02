@@ -2,19 +2,24 @@ package edu.ou.gradeient;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.support.v4.app.NavUtils;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.CheckBox;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
+import edu.ou.gradeient.data.Subject;
 import edu.ou.gradeient.data.Task;
 import edu.ou.gradeient.data.TaskWorkInterval;
+import edu.ou.gradeient.data.TimeUtils;
 
 public class ViewTaskActivity extends Activity {
 
@@ -23,6 +28,14 @@ public class ViewTaskActivity extends Activity {
 	
 	private Task task;
 	
+	private TextView taskName;
+	private TableRow taskNameRow;
+	private TextView subjectName;
+	private TextView startDate;
+	private TextView dueDate;
+	private CheckBox doneCb;
+	private TextView notes;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -30,6 +43,14 @@ public class ViewTaskActivity extends Activity {
 		// Show the Up button in the action bar.
 		getActionBar().setDisplayHomeAsUpEnabled(true);
 		
+		taskName = (TextView)findViewById(R.id.task_name);
+		taskNameRow = (TableRow)findViewById(R.id.row_task_name);
+		subjectName = (TextView)findViewById(R.id.subject_name);
+		startDate = (TextView)findViewById(R.id.start_time);
+		dueDate = (TextView)findViewById(R.id.due_time);
+		doneCb = (CheckBox)findViewById(R.id.done_cb);
+		notes = (TextView)findViewById(R.id.notes);
+
 		if (savedInstanceState == null) {
 			setTaskFromIntent();
 		} else {
@@ -41,7 +62,23 @@ public class ViewTaskActivity extends Activity {
 			}
 		}
 		
+		doneCb.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				if (task == null) return;
+				//TODO probably this should be done in background
+				ContentValues cv = new ContentValues(1);
+				cv.put(Task.Schema.IS_DONE, doneCb.isChecked() ? 1 : 0);
+				getContentResolver().update(
+						Task.Schema.getUriForTask(task.getId()), cv, null, null);
+				setResult(RESULT_OK);
+			}
+		});
+		
 		updateView();
+		
+		// return canceled unless the user makes a change
+		setResult(RESULT_CANCELED);
 	}
 
 		
@@ -85,13 +122,13 @@ public class ViewTaskActivity extends Activity {
 	}
 
 	private void updateView() {
-		TextView taskName = (TextView)findViewById(R.id.task_name);
-		TextView subjectName = (TextView)findViewById(R.id.subject_name);
-		TextView dueDate = (TextView)findViewById(R.id.due_time);
-		
 		taskName.setText(task.getName());
+		taskNameRow.setBackgroundResource(Subject.getColor(task.getSubject()));
 		subjectName.setText(task.getSubject());
-		dueDate.setText("Due Time Goes Here");
+		startDate.setText(TimeUtils.formatTimeDate(task.getStartMillis()));
+		dueDate.setText(TimeUtils.formatTimeDate(task.getEndMillis()));
+		doneCb.setChecked(task.isDone());
+		notes.setText(task.getNotes());
 	}
 
 	@Override
@@ -106,13 +143,10 @@ public class ViewTaskActivity extends Activity {
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 			case android.R.id.home:
-				// This ID represents the Home or Up button. In the case of this
-				// activity, the Up button is shown. Use NavUtils to allow users
-				// to navigate up one level in the application structure. For
-				// more details, see the Navigation pattern on Android Design:
-				//
-				// http://developer.android.com/design/patterns/navigation.html#up-vs-back
-				NavUtils.navigateUpFromSameTask(this);
+				// Using the NavUtils method results in going up to the home
+				// screen when the up button is pressed rather than to the
+				// previous activity.
+				finish();
 				return true;
 				
 			case R.id.action_discard:
@@ -158,6 +192,7 @@ public class ViewTaskActivity extends Activity {
 		if (resultCode == RESULT_OK) {
 			setTaskFromDb(task.getId());
 			updateView();
+			setResult(RESULT_OK);
 		}
 	}
 
