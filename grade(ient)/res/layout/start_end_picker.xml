@@ -15,7 +15,7 @@
             style="@style/TextAppearance.EditEvent_LabelSmall"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/edit_task_start" />
+            android:text="@string/START" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -60,7 +60,7 @@
             style="@style/TextAppearance.EditEvent_LabelSmall"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/edit_task_end" />
+            android:text="@string/DUE" />
 
         <LinearLayout
             android:layout_width="match_parent"

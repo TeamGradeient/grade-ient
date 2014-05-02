@@ -58,6 +58,8 @@ public class HomeScreenActivity extends Activity
 	
 	/** request to add task */
 	private static final int ADD_REQUEST = 1;
+	/** request to view task */
+	private static final int VIEW_REQUEST = 2;
 
 	/** DrawerLayout to hold the slide-out drawer */
 	private DrawerLayout drawerLayout;
@@ -284,9 +286,8 @@ public class HomeScreenActivity extends Activity
 				// Start an intent to add a task
 				Intent intent = new Intent(this, EditTaskActivity.class);
 				// Indicate that this is a new task
-				intent.putExtra(Extras.TASK_STATUS, 
-						Extras.TaskStatus.NEW_TASK);
-				startActivityForResult(intent, -1);
+				intent.putExtra(Extras.TASK_STATUS, Extras.TaskStatus.NEW_TASK);
+				startActivityForResult(intent, ADD_REQUEST);
 				return true;
 			case R.id.action_task_list:
 				startActivity(new Intent(this, TaskListActivity.class));
@@ -309,13 +310,19 @@ public class HomeScreenActivity extends Activity
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, 
 			Intent data) {
+		if (resultCode == RESULT_CANCELED)
+			return;
 		switch (requestCode) {
 			case ADD_REQUEST:
 				// Go to the calendar view
 				//TODO is that what we want to do?
-				//TODO eventually we will want to set up an extra in the intent
-				// to scroll to the task start date (Extras.SCROLL_TO)
-				startActivity(new Intent(this, CalendarActivity.class));
+				Intent intent = new Intent(this, CalendarActivity.class);
+				intent.putExtra(Extras.SCROLL_TO, System.currentTimeMillis());
+				startActivity(intent);
+				break;
+			case VIEW_REQUEST:
+				//TODO this doesn't seem to work
+				taskAdapter.notifyDataSetChanged();
 				break;
 			default:
 				Log.wtf(TAG, "Unknown request code: " + requestCode);
@@ -439,14 +446,9 @@ public class HomeScreenActivity extends Activity
 		public void onItemClick(AdapterView<?> adapterView, View view,
 				int position, long id) 
 		{
-			System.out.println("Task " + id + " clicked!");
-
-			Intent intent = new Intent(adapterView.getContext(), EditTaskActivity.class);
-			// Indicate that this is an existing task to edit
-			intent.putExtra(Extras.TASK_STATUS, Extras.TaskStatus.EDIT_TASK);
-			// Indicate that it is the task with the given ID that should be edited
+			Intent intent = new Intent(adapterView.getContext(), ViewTaskActivity.class);
 			intent.putExtra(Extras.TASK_ID, id);
-			startActivity(intent);
+			startActivityForResult(intent, VIEW_REQUEST);
 		}
 	}
 	

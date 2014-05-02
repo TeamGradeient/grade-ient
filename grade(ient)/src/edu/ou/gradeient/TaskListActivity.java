@@ -12,6 +12,7 @@ import android.content.Loader;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -42,7 +43,7 @@ public class TaskListActivity extends ListActivity
 	private static final String TAG = "TaskListActivity";
 	
 	private static final int ADD_REQUEST = 1;
-	private static final int EDIT_REQUEST = 2;
+	private static final int VIEW_REQUEST = 2;
 	
 	private static final String[] COLUMNS = { Task.Schema._ID,
 		Task.Schema.NAME, Task.Schema.SUBJECT_NAME, Task.Schema.END_INSTANT,
@@ -143,7 +144,7 @@ public class TaskListActivity extends ListActivity
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.task_view, menu);
+		getMenuInflater().inflate(R.menu.task_list, menu);
 		return true;
 	}
 
@@ -169,13 +170,9 @@ public class TaskListActivity extends ListActivity
 	
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
-		Intent intent = new Intent(this, EditTaskActivity.class);
-		// Indicate that this is an existing task to edit
-		intent.putExtra(Extras.TASK_STATUS,
-				Extras.TaskStatus.EDIT_TASK);
-		// Indicate that it is the task with the given ID that should be edited
+		Intent intent = new Intent(this, ViewTaskActivity.class);
 		intent.putExtra(Extras.TASK_ID, id);
-		startActivityForResult(intent, EDIT_REQUEST);
+		startActivityForResult(intent, VIEW_REQUEST);
 	}
 	
 	@Override
@@ -191,16 +188,18 @@ public class TaskListActivity extends ListActivity
 		String name = cursor.getString(column);
 		
 		new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_LIGHT)
-		.setTitle("Delete Task")
-		.setMessage("Are you sure you want to delete \"" + name + "\"?")
+		.setTitle(getString(R.string.action_delete_task))
+		.setMessage(TextUtils.expandTemplate(
+				getString(R.string.delete_msg_template), name))
 		.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int which) { 
 				getContentResolver().delete(
 						ContentUris.withAppendedId(Task.Schema.CONTENT_URI, id),
 						null, null);
 				//TODO: This probably should go somewhere else?
-				Toast.makeText(getApplicationContext(),
-						"Task deleted", Toast.LENGTH_SHORT).show();
+				Toast.makeText(getApplicationContext(), 
+						getString(R.string.task_deleted),
+						Toast.LENGTH_SHORT).show();
 			}
 		})
 		.setNegativeButton(android.R.string.no, null)
@@ -212,12 +211,12 @@ public class TaskListActivity extends ListActivity
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, 
 			Intent data) {
-		Log.d(TAG, "A result happened!");
 		switch (requestCode) {
 			case ADD_REQUEST:
 				// intentionally falling through
-			case EDIT_REQUEST:
+			case VIEW_REQUEST:
 				// Make sure the view updates
+				//TODO do we actually need to do this when view request returns?
 				if (resultCode == RESULT_OK)
 					adapter.notifyDataSetChanged();
 				break;
