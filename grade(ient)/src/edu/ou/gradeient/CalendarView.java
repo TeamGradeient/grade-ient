@@ -205,12 +205,12 @@ public class CalendarView extends View {
 	
 	private void setTaskTitle(String title, float leftEdge, float rightEdge)
 	{
-		AbsoluteLayout al = (AbsoluteLayout) findViewById(R.id.task_titles);
-		TextView tv = new TextView(al.getContext());
-		AbsoluteLayout.LayoutParams parameters = (LayoutParams) al.getLayoutParams();
-		parameters.x = (int) leftEdge;
-		parameters.y = (int)(50 * scale);
-		al.addView(tv, parameters);
+//		AbsoluteLayout al = (AbsoluteLayout) findViewById(R.id.task_titles);
+//		TextView tv = new TextView(al.getContext());
+//		AbsoluteLayout.LayoutParams parameters = (LayoutParams) al.getLayoutParams();
+//		parameters.x = (int) leftEdge;
+//		parameters.y = (int)(50 * scale);
+//		al.addView(tv, parameters);
 	}
 	
 	private void drawTaskDueTime(Canvas canvas, float leftEdge, 
