@@ -14,6 +14,7 @@ import android.content.Loader;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.ActionBarDrawerToggle;
@@ -40,6 +41,8 @@ public class HomeScreenActivity extends Activity
 	private static final String TAG = "HomeScreenActivity";
 	private static final int DRAWER_ITEM_TASK_LIST = 0;
 	private static final int DRAWER_ITEM_CALENDAR = 1;
+	private static final int DRAWER_ITEM_FEEDBACK = 2;
+	private static final int DRAWER_ITEM_GITHUB = 3;
 	
 	// These are the columns to get from the database for each view
 	private static final String[] TASK_LOADER_COLUMNS = { Task.Schema._ID,
@@ -205,6 +208,8 @@ public class HomeScreenActivity extends Activity
 		drawerItems = new ArrayList<String>();
 		drawerItems.add(this.getResources().getString(R.string.action_task_list));
 		drawerItems.add(this.getResources().getString(R.string.calendar_view));
+		drawerItems.add(this.getResources().getString(R.string.send_feedback));
+		drawerItems.add(this.getResources().getString(R.string.github));
 		//Set up adapter and attach it to the ListView
 		drawerAdapter = new ArrayAdapter<String>(this,
 				android.R.layout.simple_list_item_1,
@@ -466,6 +471,17 @@ public class HomeScreenActivity extends Activity
 					break;
 				case DRAWER_ITEM_CALENDAR:
 					startCalendarActivity(view);
+					break;
+				case DRAWER_ITEM_FEEDBACK:
+					Intent emailIntent = new Intent(Intent.ACTION_SENDTO, 
+							Uri.fromParts("mailto","grade.ient@gmail.com", null));
+					emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Feedback");
+					startActivity(Intent.createChooser(emailIntent, "Email Feedback"));
+					break;
+				case DRAWER_ITEM_GITHUB:
+					Intent githubIntent = new Intent(Intent.ACTION_VIEW, 
+							Uri.parse("https://github.com/TeamGradeient/grade-ient"));
+					startActivity(githubIntent);
 					break;
 				default:
 					Log.e(TAG, "This task was not recognized!");
