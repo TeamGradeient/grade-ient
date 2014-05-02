@@ -1,23 +1,34 @@
 package edu.ou.gradeient;
 
+import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.app.LoaderManager;
+import android.content.ContentUris;
+import android.content.ContentValues;
 import android.content.CursorLoader;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.Loader;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
-import android.text.format.DateFormat;
-import android.text.format.DateUtils;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
+import android.widget.SimpleCursorAdapter.ViewBinder;
 import android.widget.TextView;
-import android.widget.AdapterView;
+import android.widget.Toast;
+import edu.ou.gradeient.data.Subject;
+import edu.ou.gradeient.data.Task;
+import edu.ou.gradeient.data.TimeUtils;
 
 // loader manager methods from 
 // http://www.androiddesignpatterns.com/2012/07/understanding-loadermanager.html
@@ -26,81 +37,108 @@ import android.widget.AdapterView;
  * Activity for viewing a list of tasks from the database
  */
 public class TaskListActivity extends ListActivity 
-		implements LoaderManager.LoaderCallbacks<Cursor> {
+		implements LoaderManager.LoaderCallbacks<Cursor>,
+		AdapterView.OnItemLongClickListener{
+	
 	private static final String TAG = "TaskListActivity";
 	
 	private static final int ADD_REQUEST = 1;
 	private static final int EDIT_REQUEST = 2;
 	
-	private static final String[] COLUMNS = { Task.Schema._ID, 
-		Task.Schema.NAME, Task.Schema.END_INSTANT };
+	private static final String[] COLUMNS = { Task.Schema._ID,
+		Task.Schema.NAME, Task.Schema.SUBJECT_NAME, Task.Schema.END_INSTANT,
+		Task.Schema.IS_DONE };
 	
 	private static final int LOADER_ID = 1;
-	/** Callbacks to interact with the LoaderManager */
-	private LoaderManager.LoaderCallbacks<Cursor> callbacks;
 	/** Adapter that binds the data to the ListView */
 	private SimpleCursorAdapter adapter;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_task_view);
+		setContentView(R.layout.activity_task_list_view);
+		getActionBar().setDisplayHomeAsUpEnabled(true);
 		
 		// Mappings of columns to views
-		String[] dataColumns = { Task.Schema.NAME, Task.Schema.END_INSTANT };
-		int[] viewIDs = { android.R.id.text1, android.R.id.text2 };
-
+		String[] dataColumns = { Task.Schema.NAME, Task.Schema.SUBJECT_NAME,
+				Task.Schema.END_INSTANT, Task.Schema.IS_DONE, 
+				Task.Schema.SUBJECT_NAME };
+		int[] viewIDs = { R.id.task_name, R.id.subject_abbrev,
+				R.id.task_due, R.id.done_cb, R.id.task_color };
+		
 		// Initialize the adapter. Note that we pass a 'null' Cursor as the
 		// third argument. We will pass the adapter a Cursor only when the
 		// data has finished loading for the first time (i.e. when the
-		// LoaderManager delivers the data to onLoadFinished). Also note
-		// that we have passed the '0' flag as the last argument. This
+		// LoaderManager delivers the data to onLoadFinished). The '0' flag
 		// prevents the adapter from registering a ContentObserver for the
 		// Cursor (the CursorLoader will do this for us!).
-		adapter = new SimpleCursorAdapter(this, 
-				android.R.layout.simple_list_item_2, null, dataColumns, 
-				viewIDs, 0) {
+		adapter = new SimpleCursorAdapter(this, R.layout.task_list_item_view,
+				null, dataColumns, viewIDs, 0);
+		adapter.setViewBinder(new ViewBinder() {
 			@Override
-			public void setViewText(TextView v, String text) {
-				//TODO does that equals method work?
-				//TODO is this a good formatting method or should we use
-				// Joda time? (the place where I got this code from mentioned
-				// something a hack being needed for time zone support)
-				if (v.getId() == android.R.id.text2) {
-					// text2 is the line for the date, so format the date properly
-					// instead of displaying a number in milliseconds.
-					int flags = DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_WEEKDAY
-							| DateUtils.FORMAT_ABBREV_MONTH | DateUtils.FORMAT_ABBREV_WEEKDAY
-							| DateUtils.FORMAT_SHOW_TIME;
-					if (DateFormat.is24HourFormat(getApplicationContext()))
-						flags |= DateUtils.FORMAT_24HOUR;
-					text = DateUtils.formatDateTime(getApplicationContext(),
-							Long.parseLong(text), flags);
+			public boolean setViewValue(View view, Cursor cursor,
+					int columnIndex) {
+				switch (view.getId()) {
+					case R.id.subject_abbrev:
+						// Make the subject into an abbreviation
+						String subject = cursor.getString(columnIndex);
+						String abbrev = Subject.abbreviateName(subject);
+						if (abbrev == null) {
+							view.setVisibility(View.GONE);
+						} else {
+							view.setVisibility(View.VISIBLE);
+							((TextView)view).setText(abbrev);
+						}
+						return true;
+					case R.id.task_due:
+						long due = Long.parseLong(cursor.getString(columnIndex));
+						String text = TimeUtils.formatTimeDate(due);
+						((TextView)view).setText(text);
+						return true;
+					case R.id.done_cb:
+						boolean isDone = "1".equals(cursor.getString(columnIndex));
+						final long taskId = cursor.getLong(0);
+						CheckBox cb = (CheckBox)view;
+						cb.setChecked(isDone);
+						cb.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+							@Override
+							public void onCheckedChanged(
+									CompoundButton buttonView, boolean isChecked) {
+								// Update the task in the database when the
+								// checkbox state is changed
+								ContentValues cv = new ContentValues(1);
+								cv.put(Task.Schema.IS_DONE, isChecked ? 1 : 0);
+								getContentResolver().update(
+										Task.Schema.getUriForTask(taskId), 
+										cv, null, null);
+							}
+						});
+						return true;
+					case R.id.task_color:
+						int colorRes = Subject.getColor(cursor.getString(columnIndex));
+						view.setBackgroundResource(colorRes);
+						return true;
 				}
-				v.setText(text);
+				return false;
 			}
-		};
+		});
 
 		// Associate the (now empty) adapter with the ListView.
 		setListAdapter(adapter);
 
-		// The Activity (which implements the LoaderCallbacks<Cursor> 
-		// interface) is the callbacks object through which we will interact
-		// with the LoaderManager. The LoaderManager uses this object to
-		// instantiate the Loader and to notify the client when data is made
-		// available/unavailable.
-		callbacks = this;
-
-		// Initialize the Loader with id '1' and callbacks 'mCallbacks'.
+		// Initialize the Loader with id LOADER_ID and callbacks this.
 		// If the loader doesn't already exist, one is created. Otherwise,
 		// the already created Loader is reused. In either case, the
 		// LoaderManager will manage the Loader across the Activity/Fragment
 		// lifecycle, will receive any new loads once they have completed,
-		// and will report this new data back to the 'mCallbacks' object.
-		getLoaderManager().initLoader(LOADER_ID, null, callbacks);
+		// and will report new data back to this object (which implements
+		// the LoaderCallbacks<Cursor> interface that tells the LoaderManager
+		// how to instantiate loaders and allows it to notify the client when
+		// data is made available/unavailable).
+		getLoaderManager().initLoader(LOADER_ID, null, this);
 		
 		//Add a listener to handle long clicks
-		getListView().setOnItemLongClickListener(new LongClickListener());
+		getListView().setOnItemLongClickListener(this);
 	}
 
 	@Override
@@ -114,9 +152,6 @@ public class TaskListActivity extends ListActivity
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
 			case android.R.id.home:
-				//TODO is this needed? some docs say it isn't, as long as a 
-				// parent activity is specified in the manifest.
-				
 				// This ID represents the Home or Up button. In the case of this
 				// activity, the Up button is shown. Use NavUtils to allow users
 				// to navigate up one level in the application structure. For
@@ -137,29 +172,49 @@ public class TaskListActivity extends ListActivity
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		Intent intent = new Intent(this, EditTaskActivity.class);
 		// Indicate that this is an existing task to edit
-		intent.putExtra(EditTaskActivity.Extras.TASK_STATUS,
-				EditTaskActivity.TaskStatus.EDIT_TASK);
+		intent.putExtra(Extras.TASK_STATUS,
+				Extras.TaskStatus.EDIT_TASK);
 		// Indicate that it is the task with the given ID that should be edited
-		intent.putExtra(EditTaskActivity.Extras.TASK_ID, id);
+		intent.putExtra(Extras.TASK_ID, id);
 		startActivityForResult(intent, EDIT_REQUEST);
 	}
 	
-	private class LongClickListener 
-	implements AdapterView.OnItemLongClickListener
-	{
-		@Override
-		public boolean onItemLongClick(AdapterView<?> parent, View view, 
-				int position,long id) {
-			System.out.println("Long click at position " + position);
-			//TODO: Do something with the click!
-			return true;
-		}
+	@Override
+	public boolean onItemLongClick(AdapterView<?> parent, View view, 
+			int position, final long id) {
+		//TODO USING LONG CLICK FOR DELETE IS NOT PERMANENT
+		
+		// Get the task's name to include in the dialog
+		Cursor cursor = (Cursor)adapter.getItem(position);
+		if (cursor == null) return false;
+		int column = cursor.getColumnIndex(Task.Schema.NAME);
+		if (column == -1) return false;
+		String name = cursor.getString(column);
+		
+		new AlertDialog.Builder(this, AlertDialog.THEME_HOLO_LIGHT)
+		.setTitle(getString(R.string.action_delete_task))
+		.setMessage(TextUtils.expandTemplate(
+				getString(R.string.delete_msg_template), name))
+		.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog, int which) { 
+				getContentResolver().delete(
+						ContentUris.withAppendedId(Task.Schema.CONTENT_URI, id),
+						null, null);
+				//TODO: This probably should go somewhere else?
+				Toast.makeText(getApplicationContext(), 
+						getString(R.string.task_deleted),
+						Toast.LENGTH_SHORT).show();
+			}
+		})
+		.setNegativeButton(android.R.string.no, null)
+		.setIcon(android.R.drawable.ic_dialog_alert)
+		.show();
+		return true;
 	}
 	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, 
 			Intent data) {
-		Log.d(TAG, "A result happened!");
 		switch (requestCode) {
 			case ADD_REQUEST:
 				// intentionally falling through
@@ -179,8 +234,8 @@ public class TaskListActivity extends ListActivity
 	private void addTask() {
 		Intent intent = new Intent(this, EditTaskActivity.class);
 		// Indicate that this is a new task
-		intent.putExtra(EditTaskActivity.Extras.TASK_STATUS, 
-				EditTaskActivity.TaskStatus.NEW_TASK);
+		intent.putExtra(Extras.TASK_STATUS, 
+				Extras.TaskStatus.NEW_TASK);
 		startActivityForResult(intent, ADD_REQUEST);
 	}
 
@@ -188,7 +243,7 @@ public class TaskListActivity extends ListActivity
 	public Loader<Cursor> onCreateLoader(int id, Bundle args) {
 		switch (id) {
 			case LOADER_ID:
-				// Create a new CursorLoader with the following query parameters.
+				// For now, get all the tasks, but only the columns specified.
 				return new CursorLoader(this, Task.Schema.CONTENT_URI,
 						COLUMNS, null, null, null);
 			default:
